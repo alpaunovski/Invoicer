@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon></ApplicationIcon>
+    <!-- Limit satellite resource assemblies to the languages we ship (en + bg) to avoid extra locale folders in bin. -->
+    <SatelliteResourceLanguages>en;bg</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <ItemGroup>
