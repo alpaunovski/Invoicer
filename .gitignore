@@ -22,6 +22,10 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+InvoiceDesk/logs/
+
+# Local runtime logs copied for inspection
+InvoiceDesk/logs/app.log
 
 # Top Secret files
 **/MyTopSecretInfos.txt

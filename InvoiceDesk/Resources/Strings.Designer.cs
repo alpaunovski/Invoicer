@@ -83,7 +83,8 @@ public static class Strings
     public static string MessageInvoiceSaved => Get();
     public static string MessageInvoiceIssued => Get();
     public static string MessagePdfIssuedOnly => Get();
-    public static string MessagePdfExported => Get();
+        public static string MessageExportingPdf => Get();
+        public static string MessagePdfExported => Get();
     public static string NameLabel => Get();
     public static string VatLabel => Get();
     public static string CountryLabel => Get();

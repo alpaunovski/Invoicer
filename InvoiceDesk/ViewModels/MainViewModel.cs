@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Markup;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using InvoiceDesk.Helpers;
@@ -65,6 +67,8 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<VatTypeOption> vatTypes = new();
 
+    public XmlLanguage UiLanguage => XmlLanguage.GetLanguage(_languageService.CurrentCulture.IetfLanguageTag);
+
     public ObservableCollection<CultureOption> Cultures { get; } = new()
     {
         new CultureOption("en", "English"),
@@ -92,7 +96,14 @@ public partial class MainViewModel : ObservableObject
         _settingsService = settingsService;
         _logger = logger;
         _companyContext.CompanyChanged += async (_, id) => await OnCompanyChangedAsync(id);
-        _languageService.CultureChanged += (_, _) => RefreshVatTypes();
+        _languageService.CultureChanged += (_, _) =>
+        {
+            RefreshVatTypes();
+            OnPropertyChanged(nameof(UiLanguage));
+        };
+
+		// Ensure VAT options exist even before initialization completes.
+		RefreshVatTypes();
     }
 
     partial void OnSelectedInvoiceSummaryChanged(Invoice? value)
@@ -266,8 +277,18 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        var path = await _pdfExportService.ExportPdfAsync(SelectedInvoice.Id);
-        StatusMessage = string.Format(Strings.MessagePdfExported, path);
+        try
+        {
+            StatusMessage = Strings.MessageExportingPdf;
+            var path = await _pdfExportService.ExportPdfAsync(SelectedInvoice.Id);
+            StatusMessage = string.Format(Strings.MessagePdfExported, path);
+            MessageBox.Show(StatusMessage, Strings.ExportPdf, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "PDF export failed for invoice {InvoiceId}", SelectedInvoice.Id);
+            StatusMessage = $"PDF export failed: {ex.Message}";
+        }
     }
 
     [RelayCommand]
@@ -289,14 +310,20 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RemoveLine(InvoiceLineViewModel? line)
+    private void RemoveLine(object? line)
     {
-        if (line == null || SelectedInvoice == null)
+        if (SelectedInvoice == null)
         {
             return;
         }
 
-        SelectedInvoice.Lines.Remove(line);
+        var vm = line as InvoiceLineViewModel;
+        if (vm == null)
+        {
+            return;
+        }
+
+        SelectedInvoice.Lines.Remove(vm);
         SelectedInvoice.RecalculateTotals();
     }
 

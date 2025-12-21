@@ -222,7 +222,10 @@
   <data name="MessagePdfIssuedOnly" xml:space="preserve">
     <value>Only issued invoices can be exported.</value>
   </data>
+  <data name="MessageExportingPdf" xml:space="preserve">
+    <value>Exporting PDF...</value>
+  </data>
   <data name="MessagePdfExported" xml:space="preserve">
-    <value>PDF exported to {0}.</value>
+    <value>PDF exported to {0} (folder: Exports)</value>
   </data>
 </root>

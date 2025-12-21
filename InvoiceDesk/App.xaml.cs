@@ -1,5 +1,7 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using InvoiceDesk.Data;
 using InvoiceDesk.Helpers;
@@ -18,25 +20,32 @@ namespace InvoiceDesk;
 public partial class App : Application
 {
 	private IHost? _host;
+	private IConfigurationRoot? _bootstrapConfig;
+	private string? _logPath;
+	private bool _loggingAttached;
+	private const string FallbackLogFileName = "app-fallback.log";
+
+	public App()
+	{
+		_bootstrapConfig = SafeBuildBootstrapConfiguration();
+		_logPath = SafeResolveLogPath(_bootstrapConfig);
+		SafeAttachLogging(_logPath);
+		SafeAppend(_logPath, $"INFO {DateTime.UtcNow:u} App ctor initialized logging at {_logPath}\n");
+	}
 
 	protected override async void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
 		ILogger<App>? logger = null;
-		var logPath = GetLogPath();
-		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-		{
-			var msg = args.ExceptionObject as Exception ?? new Exception(args.ExceptionObject?.ToString());
-			File.AppendAllText(logPath, $"UNHANDLED {DateTime.UtcNow:u} {msg}\n");
-		};
-		DispatcherUnhandledException += (_, args) =>
-		{
-			File.AppendAllText(logPath, $"DISPATCHER {DateTime.UtcNow:u} {args.Exception}\n");
-		};
+		_bootstrapConfig ??= SafeBuildBootstrapConfiguration();
+		_logPath ??= SafeResolveLogPath(_bootstrapConfig);
+		SafeAttachLogging(_logPath);
+		var bootstrapConfig = _bootstrapConfig;
+		var logPath = _logPath;
 		try
 		{
-			File.AppendAllText(logPath, $"INFO {DateTime.UtcNow:u} Starting InvoiceDesk host build\n");
-			_host = CreateHostBuilder().Build();
+			SafeAppend(logPath, $"INFO {DateTime.UtcNow:u} Starting InvoiceDesk host build (log at {logPath})\n");
+			_host = CreateHostBuilder(bootstrapConfig).Build();
 			logger = _host.Services.GetRequiredService<ILogger<App>>();
 			logger.LogInformation("Host built");
 			await _host.StartAsync();
@@ -73,7 +82,7 @@ public partial class App : Application
 		catch (Exception ex)
 		{
 			logger?.LogCritical(ex, "Application failed to start");
-			File.AppendAllText(logPath, $"CRITICAL {DateTime.UtcNow:u} {ex}\n");
+			SafeAppend(logPath, $"CRITICAL {DateTime.UtcNow:u} {ex}\n");
 			MessageBox.Show(ex.ToString(), "InvoiceDesk startup error", MessageBoxButton.OK, MessageBoxImage.Error);
 			Shutdown();
 		}
@@ -91,13 +100,13 @@ public partial class App : Application
 		base.OnExit(e);
 	}
 
-	private static IHostBuilder CreateHostBuilder() => Host.CreateDefaultBuilder()
+	private static IHostBuilder CreateHostBuilder(IConfiguration bootstrapConfig) => Host.CreateDefaultBuilder()
 		.ConfigureAppConfiguration((context, config) =>
 		{
 			config.SetBasePath(AppContext.BaseDirectory);
 			config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 		})
-		.ConfigureLogging(logging =>
+		.ConfigureLogging((context, logging) =>
 		{
 			logging.ClearProviders();
 			logging.AddSimpleConsole(options =>
@@ -105,7 +114,7 @@ public partial class App : Application
 				options.SingleLine = true;
 				options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ ";
 			});
-			logging.AddProvider(new FileLoggerProvider(GetLogPath()));
+			logging.AddProvider(new FileLoggerProvider(GetLogPath(context.Configuration ?? bootstrapConfig)));
 			logging.SetMinimumLevel(LogLevel.Information);
 		})
 		.ConfigureServices((context, services) =>
@@ -140,11 +149,182 @@ public partial class App : Application
 			services.AddTransient<CustomerManagementWindow>();
 		});
 
-	private static string GetLogPath()
+	private static string GetLogPath(IConfiguration? configuration = null)
 	{
-		var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "InvoiceDesk", "logs");
-		Directory.CreateDirectory(dir);
-		return Path.Combine(dir, "app.log");
+		var configuredPath = configuration?["Logging:FilePath"];
+		var workspaceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+		string path;
+
+		if (!string.IsNullOrWhiteSpace(configuredPath))
+		{
+			var expanded = Environment.ExpandEnvironmentVariables(configuredPath);
+			path = Path.IsPathRooted(expanded)
+				? expanded
+				: Path.GetFullPath(Path.Combine(workspaceRoot, expanded));
+		}
+		else
+		{
+			path = Path.Combine(workspaceRoot, "logs", "app.log");
+		}
+
+		var directory = Path.GetDirectoryName(path);
+		if (!string.IsNullOrWhiteSpace(directory))
+		{
+			Directory.CreateDirectory(directory);
+		}
+
+		return path;
 	}
+
+	private void AttachGlobalExceptionLogging(string logPath)
+	{
+		if (_loggingAttached)
+		{
+			return;
+		}
+
+		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+		{
+			try
+			{
+				var msg = args.ExceptionObject as Exception ?? new Exception(args.ExceptionObject?.ToString());
+				SafeAppend(logPath, $"UNHANDLED {DateTime.UtcNow:u} {msg}\n");
+			}
+			catch
+			{
+				// Avoid recursive failures.
+			}
+		};
+
+			DispatcherUnhandledException += (_, args) =>
+		{
+			try
+			{
+					SafeAppend(logPath, $"DISPATCHER {DateTime.UtcNow:u} {args.Exception}\n");
+					args.Handled = true;
+					MessageBox.Show(args.Exception.ToString(), "Unhandled UI error", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+			catch
+			{
+				// Avoid recursive failures.
+			}
+		};
+
+		TaskScheduler.UnobservedTaskException += (_, args) =>
+		{
+			try
+			{
+				SafeAppend(logPath, $"UNOBSERVED_TASK {DateTime.UtcNow:u} {args.Exception}\n");
+				args.SetObserved();
+			}
+			catch
+			{
+				// Avoid recursive failures.
+			}
+		};
+
+		AppDomain.CurrentDomain.FirstChanceException += (_, args) =>
+		{
+			try
+			{
+				SafeAppend(logPath, $"FIRST_CHANCE {DateTime.UtcNow:u} {args.Exception.GetType().FullName}: {args.Exception.Message}\n");
+			}
+			catch
+			{
+				// Avoid recursive failures.
+			}
+		};
+
+			_loggingAttached = true;
+	}
+
+	private static void EnableBindingTrace(string logPath)
+	{
+		try
+		{
+			var listener = new TextWriterTraceListener(File.Open(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite), "BindingTrace")
+			{
+				TraceOutputOptions = TraceOptions.DateTime
+			};
+			PresentationTraceSources.DataBindingSource.Listeners.Add(listener);
+			PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Warning;
+			PresentationTraceSources.Refresh();
+		}
+		catch
+		{
+			// Do not block startup if binding trace setup fails.
+		}
+	}
+
+	private IConfigurationRoot? SafeBuildBootstrapConfiguration()
+	{
+		try
+		{
+			return BuildBootstrapConfiguration();
+		}
+		catch (Exception ex)
+		{
+			var fallback = SafeResolveLogPath(null);
+			SafeAppend(fallback, $"BOOTSTRAP_CONFIG_FAIL {DateTime.UtcNow:u} {ex}\n");
+			return null;
+		}
+	}
+
+	private string SafeResolveLogPath(IConfiguration? configuration)
+	{
+		try
+		{
+			return GetLogPath(configuration);
+		}
+		catch (Exception ex)
+		{
+			var fallback = Path.Combine(Path.GetTempPath(), "InvoiceDesk", FallbackLogFileName);
+			SafeAppend(fallback, $"LOGPATH_FAIL {DateTime.UtcNow:u} {ex}\n");
+			return fallback;
+		}
+	}
+
+	private void SafeAttachLogging(string logPath)
+	{
+		try
+		{
+			AttachGlobalExceptionLogging(logPath);
+			EnableBindingTrace(logPath);
+		}
+		catch (Exception ex)
+		{
+			SafeAppend(logPath, $"ATTACH_FAIL {DateTime.UtcNow:u} {ex}\n");
+		}
+	}
+
+	private static void SafeAppend(string? path, string message)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+		{
+			return;
+		}
+
+		try
+		{
+			var directory = Path.GetDirectoryName(path);
+			if (!string.IsNullOrWhiteSpace(directory))
+			{
+				Directory.CreateDirectory(directory);
+			}
+			using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+			using var writer = new StreamWriter(stream);
+			writer.Write(message);
+			writer.Flush();
+		}
+		catch
+		{
+			// Swallow to avoid secondary failures.
+		}
+	}
+
+	private static IConfigurationRoot BuildBootstrapConfiguration() => new ConfigurationBuilder()
+		.SetBasePath(AppContext.BaseDirectory)
+		.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+		.Build();
 }
 

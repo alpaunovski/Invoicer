@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.IO;
 using InvoiceDesk.Models;
 using InvoiceDesk.Resources;
 
@@ -13,6 +14,8 @@ public class InvoiceHtmlRenderer
         var vatSummary = BuildVatSummary(lines, culture);
         var legalTexts = BuildLegalTexts(lines);
 
+        var logoDataUrl = BuildLogoDataUrl(company);
+
         var sb = new StringBuilder();
         sb.Append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>");
         sb.Append("<style>");
@@ -23,10 +26,21 @@ public class InvoiceHtmlRenderer
         sb.Append(".totals { margin-top: 16px; width: 40%; float: right; page-break-inside: avoid; } .totals td { border: none; } .totals tr td.label { text-align: right; font-weight: 600; } ");
         sb.Append(".address-block { width: 48%; display: inline-block; vertical-align: top; } .meta { margin-top: 10px; } .badge { padding: 4px 8px; border-radius: 4px; background: #223a5e; color: white; font-size: 12px; display: inline-block; } ");
         sb.Append(".notes { margin-top: 20px; } .legal { font-size: 11px; color: #333; margin-top: 12px; } ");
+        sb.Append(".logo-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; } .logo { max-height: 80px; display: block; } .company-title { margin: 0; }");
         sb.Append("</style></head><body>");
 
         sb.Append("<div class='header'>");
-        sb.Append($"<h2>{Html(company.Name)}</h2>");
+        if (!string.IsNullOrEmpty(logoDataUrl))
+        {
+            sb.Append("<div class='logo-wrap'>");
+            sb.Append($"<img class='logo' src='{logoDataUrl}' alt='{Html(company.Name)} logo' />");
+            sb.Append($"<h2 class='company-title'>{Html(company.Name)}</h2>");
+            sb.Append("</div>");
+        }
+        else
+        {
+            sb.Append($"<h2 class='company-title'>{Html(company.Name)}</h2>");
+        }
         sb.Append("</div>");
 
         sb.Append("<div class='meta' style='margin-top:40px;'>");
@@ -114,6 +128,45 @@ public class InvoiceHtmlRenderer
 
         sb.Append("</body></html>");
         return sb.ToString();
+    }
+
+    private static string? BuildLogoDataUrl(Company company)
+    {
+        if (string.IsNullOrWhiteSpace(company.LogoPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var path = company.LogoPath;
+            if (!Path.IsPathRooted(path))
+            {
+                var baseDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+                path = Path.GetFullPath(Path.Combine(baseDir, path));
+            }
+
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            var bytes = File.ReadAllBytes(path);
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            var mime = ext switch
+            {
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                _ => "image/png"
+            };
+            var base64 = Convert.ToBase64String(bytes);
+            return $"data:{mime};base64,{base64}";
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string Html(string? value)

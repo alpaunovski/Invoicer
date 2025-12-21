@@ -60,11 +60,12 @@ public partial class InvoiceViewModel : ObservableObject
         decimal tax = 0m;
         foreach (var line in Lines)
         {
+            var normalizedRate = NormalizeTaxRate(line);
             var baseAmount = Math.Round(line.Qty * line.UnitPrice, 2, MidpointRounding.AwayFromZero);
             decimal vat = 0m;
             if (line.VatType == VatType.Domestic)
             {
-                vat = Math.Round(baseAmount * line.TaxRate, 2, MidpointRounding.AwayFromZero);
+                vat = Math.Round(baseAmount * normalizedRate, 2, MidpointRounding.AwayFromZero);
             }
 
             line.LineTotal = baseAmount + vat;
@@ -75,6 +76,23 @@ public partial class InvoiceViewModel : ObservableObject
         SubTotal = subtotal;
         TaxTotal = tax;
         Total = subtotal + tax;
+    }
+
+    private static decimal NormalizeTaxRate(InvoiceLineViewModel line)
+    {
+        var rate = line.TaxRate;
+        if (rate > 1m)
+        {
+            rate = Math.Round(rate / 100m, 4, MidpointRounding.AwayFromZero);
+            line.TaxRate = rate;
+        }
+        else if (rate < 0m)
+        {
+            rate = 0m;
+            line.TaxRate = rate;
+        }
+
+        return rate;
     }
 
     public static InvoiceViewModel FromEntity(Invoice invoice)

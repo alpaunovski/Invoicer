@@ -42,7 +42,13 @@ public class UserSettingsService
     public async Task SaveAsync(UserSettings settings)
     {
         _cached = settings;
-        await using var stream = File.Create(_settingsPath);
+        // Allow other readers while writing to reduce IO contention (e.g., multiple app instances).
+        await using var stream = new FileStream(
+            _settingsPath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.Read);
+
         await JsonSerializer.SerializeAsync(stream, settings, new JsonSerializerOptions { WriteIndented = true });
     }
 }

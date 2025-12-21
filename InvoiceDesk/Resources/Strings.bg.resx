@@ -222,7 +222,10 @@
   <data name="MessagePdfIssuedOnly" xml:space="preserve">
     <value>Само издадени фактури могат да се експортират.</value>
   </data>
+    <data name="MessageExportingPdf" xml:space="preserve">
+      <value>Експортиране на PDF...</value>
+    </data>
   <data name="MessagePdfExported" xml:space="preserve">
-    <value>PDF е генериран в {0}.</value>
+      <value>PDF е генериран в {0} (папка: Exports).</value>
   </data>
 </root>

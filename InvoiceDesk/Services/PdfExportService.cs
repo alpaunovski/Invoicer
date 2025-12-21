@@ -1,5 +1,8 @@
 using System.IO;
 using System.Windows;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Windows.Controls;
 using InvoiceDesk.Data;
 using InvoiceDesk.Helpers;
 using InvoiceDesk.Models;
@@ -46,6 +49,8 @@ public class PdfExportService
             throw new InvalidOperationException("Only issued invoices can be exported");
         }
 
+        _logger.LogInformation("Export PDF requested for invoice {InvoiceId}", invoiceId);
+
         var outputDir = targetPath != null ? Path.GetDirectoryName(targetPath)! : GetOutputDirectory();
         Directory.CreateDirectory(outputDir);
 
@@ -58,17 +63,25 @@ public class PdfExportService
             return outputPath;
         }
 
-        var html = _renderer.RenderHtml(invoice.Company!, invoice, invoice.Lines.ToList());
-        var bytes = await GeneratePdfBytesAsync(html, outputPath, cancellationToken);
+        try
+        {
+            var html = _renderer.RenderHtml(invoice.Company!, invoice, invoice.Lines.ToList());
+            var bytes = await GeneratePdfBytesAsync(html, outputPath, cancellationToken);
 
-        invoice.IssuedPdf = bytes;
-        invoice.IssuedPdfFileName = fileName;
-        invoice.IssuedPdfSha256 = HashHelper.ComputeSha256(bytes);
-        invoice.IssuedPdfCreatedAtUtc = DateTime.UtcNow;
+            invoice.IssuedPdf = bytes;
+            invoice.IssuedPdfFileName = fileName;
+            invoice.IssuedPdfSha256 = HashHelper.ComputeSha256(bytes);
+            invoice.IssuedPdfCreatedAtUtc = DateTime.UtcNow;
 
-        await db.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Exported PDF for invoice {InvoiceId} to {Path}", invoiceId, outputPath);
-        return outputPath;
+            await db.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Exported PDF for invoice {InvoiceId} to {Path}", invoiceId, outputPath);
+            return outputPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Export PDF failed for invoice {InvoiceId}", invoiceId);
+            throw;
+        }
     }
 
     public Task<string> GenerateAndStoreIssuedPdfAsync(int invoiceId, CancellationToken cancellationToken = default)
@@ -79,13 +92,17 @@ public class PdfExportService
     private string GetOutputDirectory()
     {
         var configured = _configuration.GetSection("Pdf")?["OutputDirectory"];
+        var workspaceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+
         if (!string.IsNullOrWhiteSpace(configured))
         {
-            return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configured));
+            var expanded = Environment.ExpandEnvironmentVariables(configured);
+            return Path.IsPathRooted(expanded)
+                ? expanded
+                : Path.GetFullPath(Path.Combine(workspaceRoot, expanded));
         }
 
-        var defaultDir = Path.Combine(AppContext.BaseDirectory, "Exports");
-        return defaultDir;
+        return Path.Combine(workspaceRoot, "exports");
     }
 
     private async Task<byte[]> GeneratePdfBytesAsync(string html, string filePath, CancellationToken cancellationToken)
@@ -98,9 +115,40 @@ public class PdfExportService
 
         return await dispatcher.InvokeAsync(async () =>
         {
+            _logger.LogInformation("PDF export: initializing WebView2");
+            var diag = BuildWebView2Diagnostics();
+            var availableVersion = CoreWebView2Environment.GetAvailableBrowserVersionString();
+            if (string.IsNullOrWhiteSpace(availableVersion))
+            {
+                var message = $"WebView2 runtime not available. Install the Microsoft Edge WebView2 runtime for this architecture. Diagnostics: {diag}";
+                _logger.LogError(message);
+                throw new InvalidOperationException(message);
+            }
+
+            _logger.LogInformation("PDF export: WebView2 runtime version {Version}. {Diag}", availableVersion, diag);
             var userData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "InvoiceDesk", "WebView2");
             Directory.CreateDirectory(userData);
-            var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userData);
+            CoreWebView2Environment? environment;
+            try
+            {
+                environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PDF export: failed to create WebView2 environment (userData: {UserData})", userData);
+                throw;
+            }
+
+            var hostWindow = new Window
+            {
+                Width = 1,
+                Height = 1,
+                Visibility = Visibility.Hidden,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.None,
+                AllowsTransparency = true,
+                Content = new Grid()
+            };
 
             var webView = new WebView2
             {
@@ -109,7 +157,45 @@ public class PdfExportService
                 Height = 1754
             };
 
-            await webView.EnsureCoreWebView2Async(environment);
+            ((Grid)hostWindow.Content!).Children.Add(webView);
+            hostWindow.Show();
+            webView.CoreWebView2InitializationCompleted += (_, args) =>
+            {
+                if (args.IsSuccess)
+                {
+                    _logger.LogInformation("PDF export: CoreWebView2InitializationCompleted success");
+                }
+                else
+                {
+                    _logger.LogError(args.InitializationException, "PDF export: CoreWebView2InitializationCompleted failed");
+                }
+            };
+
+            _logger.LogInformation("PDF export: calling EnsureCoreWebView2Async");
+            try
+            {
+                var ensureCoreTask = webView.EnsureCoreWebView2Async(environment);
+                var ensureCompleted = await Task.WhenAny(ensureCoreTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken));
+                if (ensureCompleted != ensureCoreTask)
+                {
+                    throw new TimeoutException("PDF export: WebView2 initialization timed out after 10s");
+                }
+                await ensureCoreTask.WaitAsync(cancellationToken);
+                _logger.LogInformation("PDF export: WebView2 ready (userData: {UserData})", userData);
+            }
+            catch (Exception ex)
+            {
+                var version = CoreWebView2Environment.GetAvailableBrowserVersionString();
+                _logger.LogError(ex, "PDF export: EnsureCoreWebView2Async failed (available runtime {Version})", version);
+                throw;
+            }
+
+            if (webView.CoreWebView2 == null)
+            {
+                var state = $"CoreWebView2 null after EnsureCoreWebView2Async. Environment: {environment?.BrowserVersionString}; userData: {userData}";
+                _logger.LogError("PDF export: {State}", state);
+                throw new InvalidOperationException(state);
+            }
             var navigationCompleted = new TaskCompletionSource<bool>();
             webView.NavigationCompleted += (_, args) =>
             {
@@ -124,7 +210,15 @@ public class PdfExportService
             };
 
             webView.NavigateToString(html);
-            await navigationCompleted.Task.WaitAsync(cancellationToken);
+            _logger.LogInformation("PDF export: waiting for HTML navigation");
+            var navTask = navigationCompleted.Task;
+            var navCompleted = await Task.WhenAny(navTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken));
+            if (navCompleted != navTask)
+            {
+                throw new TimeoutException("PDF export navigation timed out after 10s");
+            }
+            await navTask.WaitAsync(cancellationToken);
+            _logger.LogInformation("PDF export: navigation complete");
 
             var settings = webView.CoreWebView2.Environment.CreatePrintSettings();
             settings.ShouldPrintBackgrounds = true;
@@ -135,8 +229,28 @@ public class PdfExportService
             settings.MarginLeft = 0.5;
             settings.MarginRight = 0.5;
 
-            await webView.CoreWebView2.PrintToPdfAsync(filePath, settings).WaitAsync(cancellationToken);
-            return await File.ReadAllBytesAsync(filePath, cancellationToken);
+            _logger.LogInformation("PDF export: printing to {Path}", filePath);
+            var printTask = webView.CoreWebView2.PrintToPdfAsync(filePath, settings);
+            var printCompleted = await Task.WhenAny(printTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken));
+            if (printCompleted != printTask)
+            {
+                throw new TimeoutException("PDF export print timed out after 10s");
+            }
+            await printTask.WaitAsync(cancellationToken);
+            _logger.LogInformation("PDF export: print complete");
+
+            var bytes = await File.ReadAllBytesAsync(filePath, cancellationToken);
+            var exists = File.Exists(filePath);
+            _logger.LogInformation("PDF export: read back {Length} bytes (exists on disk: {Exists})", bytes.Length, exists);
+            hostWindow.Close();
+            return bytes;
         }).Task.Unwrap();
+    }
+
+    private static string BuildWebView2Diagnostics()
+    {
+        var procArch = RuntimeInformation.ProcessArchitecture;
+        var osArch = RuntimeInformation.OSArchitecture;
+        return $"ProcessArch={procArch}, OSArch={osArch}, Is64BitProcess={Environment.Is64BitProcess}";
     }
 }

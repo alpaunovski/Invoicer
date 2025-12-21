@@ -31,6 +31,10 @@ public partial class InvoiceLineViewModel : ObservableObject
 
     public InvoiceLine ToEntity(int companyId)
     {
+        var normalizedTaxRate = TaxRate > 1m
+            ? Math.Round(TaxRate / 100m, 4, MidpointRounding.AwayFromZero)
+            : Math.Max(TaxRate, 0m);
+
         return new InvoiceLine
         {
             Id = Id,
@@ -39,7 +43,7 @@ public partial class InvoiceLineViewModel : ObservableObject
             Description = Description,
             Qty = Qty,
             UnitPrice = UnitPrice,
-            TaxRate = TaxRate,
+            TaxRate = normalizedTaxRate,
             VatType = VatType,
             LineTotal = LineTotal
         };
