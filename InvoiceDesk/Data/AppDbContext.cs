@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Keep entity configuration split by type for readability and reuse.
         ConfigureCompany(modelBuilder);
         ConfigureCustomer(modelBuilder);
         ConfigureInvoice(modelBuilder);
@@ -21,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     private static void ConfigureCompany(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<Company>();
+        // Basic company metadata and invoice numbering settings.
         entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
         entity.Property(e => e.VatNumber).HasMaxLength(50).IsRequired();
         entity.Property(e => e.CountryCode).HasMaxLength(8).IsRequired();
@@ -35,6 +37,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     private static void ConfigureCustomer(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<Customer>();
+        // Tenant-aware customer rows; enforce lengths and FK to company.
         entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
         entity.Property(e => e.VatNumber).HasMaxLength(50).IsRequired();
         entity.Property(e => e.CountryCode).HasMaxLength(8).IsRequired();
@@ -53,6 +56,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     private static void ConfigureInvoice(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<Invoice>();
+        // Snapshotted customer details and monetary precision per invoice.
         entity.Property(e => e.InvoiceNumber).HasMaxLength(64).IsRequired();
         entity.Property(e => e.Currency).HasMaxLength(8).IsRequired();
         entity.Property(e => e.CustomerNameSnapshot).HasMaxLength(200).IsRequired();
@@ -89,6 +93,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     private static void ConfigureInvoiceLine(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<InvoiceLine>();
+        // Per-line monetary precision; tie back to invoice.
         entity.Property(e => e.Description).HasMaxLength(400).IsRequired();
         entity.Property(e => e.Qty).HasPrecision(18, 3);
         entity.Property(e => e.UnitPrice).HasPrecision(18, 2);

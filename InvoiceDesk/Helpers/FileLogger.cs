@@ -27,6 +27,7 @@ namespace InvoiceDesk.Helpers
 
         internal void Write(LogLevel level, string category, EventId eventId, string message, Exception? exception)
         {
+            // Skip work if below configured minimum or after disposal to avoid unnecessary I/O.
             if (level < _minLevel || _disposed)
             {
                 return;
@@ -52,6 +53,7 @@ namespace InvoiceDesk.Helpers
 
                 lock (_lock)
                 {
+                    // Serialize writes so multiple threads cannot interleave log lines.
                     _writer!.WriteLine(sb.ToString());
                     _writer.Flush();
                 }
@@ -73,12 +75,14 @@ namespace InvoiceDesk.Helpers
             {
                 if (_writer == null)
                 {
+                    // Create directory if it does not exist so logging cannot fail due to missing path.
                     var directory = Path.GetDirectoryName(_filePath);
                     if (!string.IsNullOrWhiteSpace(directory))
                     {
                         Directory.CreateDirectory(directory);
                     }
 
+                    // FileShare.ReadWrite allows tailing the log while the app is running.
                     _writer = new StreamWriter(new FileStream(_filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
                     {
                         AutoFlush = true
@@ -119,11 +123,13 @@ namespace InvoiceDesk.Helpers
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
             {
+                // Fast path exit for filtered levels; avoids formatting cost.
                 if (!IsEnabled(logLevel))
                 {
                     return;
                 }
 
+                // Defer string creation to provided formatter to honor structured logging.
                 var message = formatter(state, exception);
                 _provider.Write(logLevel, _categoryName, eventId, message, exception);
             }
@@ -132,6 +138,7 @@ namespace InvoiceDesk.Helpers
         private sealed class NullScope : IDisposable
         {
             public static readonly NullScope Instance = new();
+            // No-op disposable to satisfy ILogger scope requirements without allocations.
             public void Dispose()
             {
             }

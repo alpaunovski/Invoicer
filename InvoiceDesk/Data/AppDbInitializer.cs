@@ -18,12 +18,15 @@ public class AppDbInitializer
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        // Apply pending migrations so the app can run without manual database setup.
         await db.Database.MigrateAsync(cancellationToken);
 
+        // Clean up legacy data issues that could break unique constraints.
         await FixMissingInvoiceNumbersAsync(db, cancellationToken);
 
         if (!await db.Companies.AnyAsync(cancellationToken))
         {
+            // Seed a minimal company to let the app start end-to-end on first run.
             var company = new Company
             {
                 Name = "Default Company",
@@ -54,6 +57,7 @@ public class AppDbInitializer
 
         foreach (var invoice in missing)
         {
+            // Use deterministic prefix plus invoice ID to avoid collisions.
             invoice.InvoiceNumber = GenerateRepairNumber(invoice.CompanyId, invoice.Id);
         }
 

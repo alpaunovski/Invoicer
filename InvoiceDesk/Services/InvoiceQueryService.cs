@@ -18,12 +18,14 @@ public class InvoiceQueryService
     public async Task<List<Invoice>> SearchAsync(string? search, DateTime? from, DateTime? to, int? customerId, CancellationToken cancellationToken = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        // Always scope queries to the active company to avoid cross-tenant leakage.
         var query = db.Invoices.AsNoTracking()
             .Include(i => i.Customer)
             .Where(i => i.CompanyId == _companyContext.CurrentCompanyId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
+            // Simple text search over invoice number and customer snapshot.
             query = query.Where(i => EF.Functions.Like(i.InvoiceNumber, $"%{search}%") || EF.Functions.Like(i.CustomerNameSnapshot, $"%{search}%"));
         }
 

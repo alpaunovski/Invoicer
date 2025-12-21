@@ -20,7 +20,7 @@ namespace InvoiceDesk;
 public partial class App : Application
 {
 	private IHost? _host;
-	private IConfigurationRoot? _bootstrapConfig;
+	private IConfigurationRoot _bootstrapConfig;
 	private string? _logPath;
 	private bool _loggingAttached;
 	private const string FallbackLogFileName = "app-fallback.log";
@@ -256,7 +256,7 @@ public partial class App : Application
 		}
 	}
 
-	private IConfigurationRoot? SafeBuildBootstrapConfiguration()
+	private IConfigurationRoot SafeBuildBootstrapConfiguration()
 	{
 		try
 		{
@@ -266,7 +266,7 @@ public partial class App : Application
 		{
 			var fallback = SafeResolveLogPath(null);
 			SafeAppend(fallback, $"BOOTSTRAP_CONFIG_FAIL {DateTime.UtcNow:u} {ex}\n");
-			return null;
+			return new ConfigurationBuilder().Build();
 		}
 	}
 

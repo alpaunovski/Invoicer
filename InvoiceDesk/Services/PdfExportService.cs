@@ -51,6 +51,7 @@ public class PdfExportService
 
         _logger.LogInformation("Export PDF requested for invoice {InvoiceId}", invoiceId);
 
+        // Resolve output path (allow override), ensure directory exists.
         var outputDir = targetPath != null ? Path.GetDirectoryName(targetPath)! : GetOutputDirectory();
         Directory.CreateDirectory(outputDir);
 
@@ -59,6 +60,7 @@ public class PdfExportService
 
         if (invoice.IssuedPdf != null && !regenerate)
         {
+            // Reuse stored bytes instead of regenerating when available.
             await File.WriteAllBytesAsync(outputPath, invoice.IssuedPdf, cancellationToken);
             return outputPath;
         }
@@ -131,6 +133,7 @@ public class PdfExportService
             CoreWebView2Environment? environment;
             try
             {
+                // Keep a dedicated user data folder so the runtime can initialize in a service-like context.
                 environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userData);
             }
             catch (Exception ex)
@@ -139,6 +142,7 @@ public class PdfExportService
                 throw;
             }
 
+            // Hidden host window to give WebView2 a dispatcher/visual root without flashing UI.
             var hostWindow = new Window
             {
                 Width = 1,
@@ -174,6 +178,7 @@ public class PdfExportService
             _logger.LogInformation("PDF export: calling EnsureCoreWebView2Async");
             try
             {
+                // Bound initialization to 10s to avoid hanging if runtime is unhealthy.
                 var ensureCoreTask = webView.EnsureCoreWebView2Async(environment);
                 var ensureCompleted = await Task.WhenAny(ensureCoreTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken));
                 if (ensureCompleted != ensureCoreTask)
@@ -196,6 +201,7 @@ public class PdfExportService
                 _logger.LogError("PDF export: {State}", state);
                 throw new InvalidOperationException(state);
             }
+            // Track navigation so we only print once HTML is fully loaded.
             var navigationCompleted = new TaskCompletionSource<bool>();
             webView.NavigationCompleted += (_, args) =>
             {
@@ -212,6 +218,7 @@ public class PdfExportService
             webView.NavigateToString(html);
             _logger.LogInformation("PDF export: waiting for HTML navigation");
             var navTask = navigationCompleted.Task;
+            // Guard navigation with a timeout to fail fast on broken HTML/runtime.
             var navCompleted = await Task.WhenAny(navTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken));
             if (navCompleted != navTask)
             {
@@ -231,6 +238,7 @@ public class PdfExportService
 
             _logger.LogInformation("PDF export: printing to {Path}", filePath);
             var printTask = webView.CoreWebView2.PrintToPdfAsync(filePath, settings);
+            // Print can hang if WebView2 crashes; enforce a 10s ceiling.
             var printCompleted = await Task.WhenAny(printTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken));
             if (printCompleted != printTask)
             {

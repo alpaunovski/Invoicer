@@ -30,6 +30,7 @@ public class InvoiceService
             throw new InvalidOperationException("Customer not found for company");
         }
 
+        // Draft invoices get a temporary number and capture customer snapshot for immutability.
         var invoice = new Invoice
         {
             CompanyId = companyId,
@@ -83,6 +84,7 @@ public class InvoiceService
         await db.Entry(existing).Reference(i => i.Customer).LoadAsync(cancellationToken);
         if (existing.Customer != null)
         {
+            // Persist customer details so later changes do not affect historical invoices.
             existing.CustomerNameSnapshot = existing.Customer.Name;
             existing.CustomerAddressSnapshot = existing.Customer.Address;
             existing.CustomerVatSnapshot = existing.Customer.VatNumber;
@@ -150,6 +152,7 @@ public class InvoiceService
     private static void UpdateLines(Invoice invoice, IEnumerable<InvoiceLine> incoming)
     {
         var incomingList = incoming.ToList();
+        // Delete orphaned lines that were removed in the UI.
         var toRemove = invoice.Lines.Where(l => incomingList.All(i => i.Id != l.Id)).ToList();
         foreach (var remove in toRemove)
         {
@@ -161,12 +164,14 @@ public class InvoiceService
             var target = invoice.Lines.FirstOrDefault(l => l.Id == incomingLine.Id);
             if (target == null)
             {
+                // New line: attach to invoice and company to keep FK consistency.
                 incomingLine.CompanyId = invoice.CompanyId;
                 incomingLine.InvoiceId = invoice.Id;
                 invoice.Lines.Add(incomingLine);
             }
             else
             {
+                // Existing line: update mutable fields only.
                 target.CompanyId = invoice.CompanyId;
                 target.InvoiceId = invoice.Id;
                 target.Description = incomingLine.Description;
@@ -185,6 +190,7 @@ public class InvoiceService
 
         foreach (var line in invoice.Lines)
         {
+            // Calculate base per line and VAT depending on regime; round per line to avoid drift.
             var lineBase = Math.Round(line.Qty * line.UnitPrice, 2, MidpointRounding.AwayFromZero);
             decimal vat = 0m;
             switch (line.VatType)

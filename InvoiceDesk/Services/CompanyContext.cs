@@ -35,6 +35,7 @@ public class CompanyContext : ICompanyContext
 
         CurrentCompanyId = companyId;
         _logger.LogInformation("Switched company context to {CompanyId}", companyId);
+        // Notify listeners (view models, services) so they can reload scoped data.
         CompanyChanged?.Invoke(this, companyId);
     }
 }

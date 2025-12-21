@@ -10,10 +10,12 @@ public class InvoiceHtmlRenderer
 {
     public string RenderHtml(Company company, Invoice invoice, IList<InvoiceLine> lines)
     {
+        // Use invariant culture so numeric formatting stays stable regardless of UI locale.
         var culture = CultureInfo.InvariantCulture;
         var vatSummary = BuildVatSummary(lines, culture);
         var legalTexts = BuildLegalTexts(lines);
 
+        // Embed company logo as data URL if available to avoid external file dependencies.
         var logoDataUrl = BuildLogoDataUrl(company);
 
         var sb = new StringBuilder();
@@ -81,6 +83,7 @@ public class InvoiceHtmlRenderer
 
         foreach (var line in lines)
         {
+            // Render each line with fixed decimal formats to keep totals deterministic.
             sb.Append("<tr>");
             sb.Append($"<td>{Html(line.Description)}</td>");
             sb.Append($"<td style='text-align:right'>{line.Qty.ToString("0.###", culture)}</td>");
@@ -108,6 +111,7 @@ public class InvoiceHtmlRenderer
 
         if (vatSummary.Any())
         {
+            // Show VAT aggregation per type so reverse charge/export context is visible.
             sb.Append($"<div class='legal'><strong>{Html(Strings.PdfVatSummary)}</strong><ul>");
             foreach (var item in vatSummary)
             {
@@ -118,6 +122,7 @@ public class InvoiceHtmlRenderer
 
         if (legalTexts.Any())
         {
+            // Include legal text blocks when specific VAT regimes require wording.
             sb.Append("<div class='legal'>");
             foreach (var text in legalTexts)
             {
