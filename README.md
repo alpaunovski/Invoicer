@@ -2,6 +2,13 @@
 
 Multi-company invoice manager with MySQL + EF Core, WebView2 PDF export, MVVM, and RESX localization (English/Bulgarian).
 
+# Disclaimer
+
+I built this program as a course paper for University. It's not good for production. 
+Do not use it in a real business setting.
+This program comes with absolutely no warranty, given or implied.
+It's for educational purposes only.
+
 ## Prereqs
 - .NET 8 SDK
 - MySQL 8 server running locally
