@@ -42,6 +42,7 @@ public static class Strings
     public static string Customer => Get();
     public static string IssueDate => Get();
     public static string StatusLabel => Get();
+    public static string InvoiceLanguageLabel => Get();
     public static string Currency => Get();
     public static string SubTotal => Get();
     public static string TaxTotal => Get();

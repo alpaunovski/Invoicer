@@ -60,6 +60,9 @@
   <data name="StatusLabel" xml:space="preserve">
     <value>Статус</value>
   </data>
+  <data name="InvoiceLanguageLabel" xml:space="preserve">
+    <value>Език на фактурата</value>
+  </data>
   <data name="Currency" xml:space="preserve">
     <value>Валута</value>
   </data>

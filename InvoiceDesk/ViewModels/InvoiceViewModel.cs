@@ -25,6 +25,9 @@ public partial class InvoiceViewModel : ObservableObject
     private InvoiceStatus status = InvoiceStatus.Draft;
 
     [ObservableProperty]
+    private string invoiceLanguage = "en";
+
+    [ObservableProperty]
     private string currency = "EUR";
 
     [ObservableProperty]
@@ -105,6 +108,7 @@ public partial class InvoiceViewModel : ObservableObject
             InvoiceNumber = invoice.InvoiceNumber,
             IssueDate = invoice.IssueDate,
             Status = invoice.Status,
+            InvoiceLanguage = string.IsNullOrWhiteSpace(invoice.InvoiceLanguage) ? "en" : invoice.InvoiceLanguage,
             Currency = invoice.Currency,
             SubTotal = invoice.SubTotal,
             TaxTotal = invoice.TaxTotal,
@@ -127,6 +131,7 @@ public partial class InvoiceViewModel : ObservableObject
             InvoiceNumber = InvoiceNumber,
             IssueDate = IssueDate,
             Status = Status,
+            InvoiceLanguage = string.IsNullOrWhiteSpace(InvoiceLanguage) ? "en" : InvoiceLanguage,
             Currency = Currency,
             SubTotal = SubTotal,
             TaxTotal = TaxTotal,

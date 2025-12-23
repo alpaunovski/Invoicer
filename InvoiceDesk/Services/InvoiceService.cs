@@ -1,3 +1,4 @@
+using System.Globalization;
 using InvoiceDesk.Data;
 using InvoiceDesk.Models;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,7 @@ public class InvoiceService
             InvoiceNumber = GenerateDraftNumber(companyId),
             Status = InvoiceStatus.Draft,
             IssueDate = DateTime.Today,
+            InvoiceLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName,
             Currency = "EUR",
             CustomerNameSnapshot = customer.Name,
             CustomerAddressSnapshot = customer.Address,
@@ -67,6 +69,9 @@ public class InvoiceService
 
         existing.CustomerId = invoice.CustomerId;
         existing.IssueDate = invoice.IssueDate;
+        existing.InvoiceLanguage = string.IsNullOrWhiteSpace(invoice.InvoiceLanguage)
+            ? existing.InvoiceLanguage
+            : invoice.InvoiceLanguage;
         existing.Currency = invoice.Currency;
         existing.Notes = invoice.Notes;
 
@@ -130,6 +135,10 @@ public class InvoiceService
         invoice.CustomerNameSnapshot = customer.Name;
         invoice.CustomerAddressSnapshot = customer.Address;
         invoice.CustomerVatSnapshot = customer.VatNumber;
+        if (string.IsNullOrWhiteSpace(invoice.InvoiceLanguage))
+        {
+            invoice.InvoiceLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        }
         invoice.IssuedAtUtc = DateTime.UtcNow;
         invoice.Status = InvoiceStatus.Issued;
         ApplyTotals(invoice);

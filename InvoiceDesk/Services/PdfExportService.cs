@@ -3,6 +3,7 @@ using System.Windows;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Windows.Controls;
+using System.Globalization;
 using InvoiceDesk.Data;
 using InvoiceDesk.Helpers;
 using InvoiceDesk.Models;
@@ -67,7 +68,8 @@ public class PdfExportService
 
         try
         {
-            var html = _renderer.RenderHtml(invoice.Company!, invoice, invoice.Lines.ToList());
+            var invoiceCulture = new CultureInfo(string.IsNullOrWhiteSpace(invoice.InvoiceLanguage) ? "en" : invoice.InvoiceLanguage);
+            var html = _renderer.RenderHtml(invoice.Company!, invoice, invoice.Lines.ToList(), invoiceCulture);
             var bytes = await GeneratePdfBytesAsync(html, outputPath, cancellationToken);
 
             invoice.IssuedPdf = bytes;

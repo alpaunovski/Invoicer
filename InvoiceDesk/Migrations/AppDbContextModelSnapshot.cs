@@ -145,6 +145,13 @@ namespace InvoiceDesk.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("varchar(8)");
 
+                    b.Property<string>("InvoiceLanguage")
+                        .ValueGeneratedOnAdd()
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasDefaultValue("en");
+
                     b.Property<string>("CustomerAddressSnapshot")
                         .IsRequired()
                         .HasMaxLength(400)

@@ -12,6 +12,7 @@ public class Invoice
     public DateTime IssueDate { get; set; }
     public DateTime? IssuedAtUtc { get; set; }
     public InvoiceStatus Status { get; set; } = InvoiceStatus.Draft;
+    public string InvoiceLanguage { get; set; } = "en";
     public string Currency { get; set; } = "EUR";
     public decimal SubTotal { get; set; }
     public decimal TaxTotal { get; set; }

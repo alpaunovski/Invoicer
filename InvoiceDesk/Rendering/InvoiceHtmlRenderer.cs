@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.IO;
+using System.Linq;
 using InvoiceDesk.Models;
 using InvoiceDesk.Resources;
 
@@ -8,28 +9,32 @@ namespace InvoiceDesk.Rendering;
 
 public class InvoiceHtmlRenderer
 {
-    public string RenderHtml(Company company, Invoice invoice, IList<InvoiceLine> lines)
+    public string RenderHtml(Company company, Invoice invoice, IList<InvoiceLine> lines, CultureInfo invoiceCulture)
     {
         // Use invariant culture so numeric formatting stays stable regardless of UI locale.
-        var culture = CultureInfo.InvariantCulture;
-        var vatSummary = BuildVatSummary(lines, culture);
+        var numberCulture = CultureInfo.InvariantCulture;
+        var previousCulture = Strings.Culture;
+        Strings.Culture = invoiceCulture;
+        var vatSummary = BuildVatSummary(lines, numberCulture);
         var legalTexts = BuildLegalTexts(lines);
 
-        // Embed company logo as data URL if available to avoid external file dependencies.
-        var logoDataUrl = BuildLogoDataUrl(company);
+        try
+        {
+            // Embed company logo as data URL if available to avoid external file dependencies.
+            var logoDataUrl = BuildLogoDataUrl(company);
 
-        var sb = new StringBuilder();
-        sb.Append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>");
-        sb.Append("<style>");
-        sb.Append("@page { size: A4; margin: 20mm; } body { font-family: 'Segoe UI', sans-serif; -webkit-print-color-adjust: exact; } ");
-        sb.Append("h1,h2,h3,h4 { margin: 0; } .header, .footer { position: fixed; left: 0; right: 0; } .header { top: 0; } .footer { bottom: 0; font-size: 12px; } ");
-        sb.Append("table { width: 100%; border-collapse: collapse; margin-top: 12px; } th, td { border: 1px solid #444; padding: 6px; font-size: 12px; } ");
-        sb.Append("thead { display: table-header-group; } tfoot { display: table-footer-group; } tr { page-break-inside: avoid; } ");
-        sb.Append(".totals { margin-top: 16px; width: 40%; float: right; page-break-inside: avoid; } .totals td { border: none; } .totals tr td.label { text-align: right; font-weight: 600; } ");
-        sb.Append(".address-block { width: 48%; display: inline-block; vertical-align: top; } .meta { margin-top: 10px; } .badge { padding: 4px 8px; border-radius: 4px; background: #223a5e; color: white; font-size: 12px; display: inline-block; } ");
-        sb.Append(".notes { margin-top: 20px; } .legal { font-size: 11px; color: #333; margin-top: 12px; } ");
-        sb.Append(".logo-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; } .logo { max-height: 80px; display: block; } .company-title { margin: 0; }");
-        sb.Append("</style></head><body>");
+            var sb = new StringBuilder();
+            sb.Append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>");
+            sb.Append("<style>");
+            sb.Append("@page { size: A4; margin: 20mm; } body { font-family: 'Segoe UI', sans-serif; -webkit-print-color-adjust: exact; } ");
+            sb.Append("h1,h2,h3,h4 { margin: 0; } .header, .footer { position: fixed; left: 0; right: 0; } .header { top: 0; } .footer { bottom: 0; font-size: 12px; } ");
+            sb.Append("table { width: 100%; border-collapse: collapse; margin-top: 12px; } th, td { border: 1px solid #444; padding: 6px; font-size: 12px; } ");
+            sb.Append("thead { display: table-header-group; } tfoot { display: table-footer-group; } tr { page-break-inside: avoid; } ");
+            sb.Append(".totals { margin-top: 16px; width: 40%; float: right; page-break-inside: avoid; } .totals td { border: none; } .totals tr td.label { text-align: right; font-weight: 600; } ");
+            sb.Append(".address-block { width: 48%; display: inline-block; vertical-align: top; } .meta { margin-top: 10px; } .badge { padding: 4px 8px; border-radius: 4px; background: #223a5e; color: white; font-size: 12px; display: inline-block; } ");
+            sb.Append(".notes { margin-top: 20px; } .legal { font-size: 11px; color: #333; margin-top: 12px; } ");
+            sb.Append(".logo-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; } .logo { max-height: 80px; display: block; } .company-title { margin: 0; }");
+            sb.Append("</style></head><body>");
 
         sb.Append("<div class='header'>");
         if (!string.IsNullOrEmpty(logoDataUrl))
@@ -68,7 +73,7 @@ public class InvoiceHtmlRenderer
 
         sb.Append("<div class='meta'>");
         sb.Append($"<div>{Html(Strings.PdfInvoiceNumber)}: {Html(invoice.InvoiceNumber)}</div>");
-        sb.Append($"<div>{Html(Strings.PdfIssueDate)}: {invoice.IssueDate.ToString("yyyy-MM-dd", culture)}</div>");
+        sb.Append($"<div>{Html(Strings.PdfIssueDate)}: {invoice.IssueDate.ToString("yyyy-MM-dd", numberCulture)}</div>");
         sb.Append($"<div>{Html(Strings.StatusLabel)}: {Html(GetStatusLabel(invoice.Status))}</div>");
         sb.Append("</div>");
 
@@ -86,20 +91,20 @@ public class InvoiceHtmlRenderer
             // Render each line with fixed decimal formats to keep totals deterministic.
             sb.Append("<tr>");
             sb.Append($"<td>{Html(line.Description)}</td>");
-            sb.Append($"<td style='text-align:right'>{line.Qty.ToString("0.###", culture)}</td>");
-            sb.Append($"<td style='text-align:right'>{line.UnitPrice.ToString("0.00", culture)}</td>");
-            sb.Append($"<td style='text-align:right'>{line.TaxRate.ToString("0.####", culture)}</td>");
+            sb.Append($"<td style='text-align:right'>{line.Qty.ToString("0.###", numberCulture)}</td>");
+            sb.Append($"<td style='text-align:right'>{line.UnitPrice.ToString("0.00", numberCulture)}</td>");
+            sb.Append($"<td style='text-align:right'>{line.TaxRate.ToString("0.####", numberCulture)}</td>");
             sb.Append($"<td>{Html(GetVatLabel(line.VatType))}</td>");
-            sb.Append($"<td style='text-align:right'>{line.LineTotal.ToString("0.00", culture)}</td>");
+            sb.Append($"<td style='text-align:right'>{line.LineTotal.ToString("0.00", numberCulture)}</td>");
             sb.Append("</tr>");
         }
 
         sb.Append("</tbody></table>");
 
         sb.Append("<table class='totals'>");
-        sb.Append($"<tr><td class='label'>{Html(Strings.PdfSubTotalLabel)}</td><td style='text-align:right'>{invoice.SubTotal.ToString("0.00", culture)}</td></tr>");
-        sb.Append($"<tr><td class='label'>{Html(Strings.PdfTaxTotalLabel)}</td><td style='text-align:right'>{invoice.TaxTotal.ToString("0.00", culture)}</td></tr>");
-        sb.Append($"<tr><td class='label'>{Html(Strings.PdfGrandTotalLabel)}</td><td style='text-align:right'>{invoice.Total.ToString("0.00", culture)}</td></tr>");
+        sb.Append($"<tr><td class='label'>{Html(Strings.PdfSubTotalLabel)}</td><td style='text-align:right'>{invoice.SubTotal.ToString("0.00", numberCulture)}</td></tr>");
+        sb.Append($"<tr><td class='label'>{Html(Strings.PdfTaxTotalLabel)}</td><td style='text-align:right'>{invoice.TaxTotal.ToString("0.00", numberCulture)}</td></tr>");
+        sb.Append($"<tr><td class='label'>{Html(Strings.PdfGrandTotalLabel)}</td><td style='text-align:right'>{invoice.Total.ToString("0.00", numberCulture)}</td></tr>");
         sb.Append("</table>");
 
         sb.Append("<div style='clear:both;'></div>");
@@ -132,7 +137,12 @@ public class InvoiceHtmlRenderer
         }
 
         sb.Append("</body></html>");
-        return sb.ToString();
+            return sb.ToString();
+        }
+        finally
+        {
+            Strings.Culture = previousCulture;
+        }
     }
 
     private static string? BuildLogoDataUrl(Company company)
