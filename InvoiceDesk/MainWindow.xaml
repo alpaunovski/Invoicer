@@ -91,7 +91,7 @@
                             <TextBlock Text="{Binding Source={StaticResource Loc}, Path=[IssueDate]}" />
                             <DatePicker SelectedDate="{Binding SelectedInvoice.IssueDate, Mode=TwoWay}" IsEnabled="{Binding SelectedInvoice.IsDraft}" />
                             <TextBlock Text="{Binding Source={StaticResource Loc}, Path=[StatusLabel]}" />
-                            <TextBox Text="{Binding SelectedInvoice.Status}" IsReadOnly="True" />
+                            <TextBox Text="{Binding SelectedInvoice.Status, Converter={StaticResource StatusConverter}}" IsReadOnly="True" />
                             <TextBlock Text="{Binding Source={StaticResource Loc}, Path=[Currency]}" />
                             <TextBox Text="{Binding SelectedInvoice.Currency, Mode=TwoWay}" IsEnabled="{Binding SelectedInvoice.IsDraft}" />
                         </StackPanel>
