@@ -198,6 +198,9 @@
   <data name="LogoLabel" xml:space="preserve">
     <value>Лого</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Изтрий</value>
+  </data>
   <data name="Close" xml:space="preserve">
     <value>Затвори</value>
   </data>

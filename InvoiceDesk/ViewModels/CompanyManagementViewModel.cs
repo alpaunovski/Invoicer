@@ -13,6 +13,9 @@ public partial class CompanyManagementViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<Company> companies = new();
 
+    [ObservableProperty]
+    private Company? selectedCompany;
+
     public CompanyManagementViewModel(CompanyService companyService)
     {
         _companyService = companyService;
@@ -45,5 +48,22 @@ public partial class CompanyManagementViewModel : ObservableObject
         {
             await _companyService.SaveAsync(company);
         }
+    }
+
+    [RelayCommand]
+    private async Task DeleteAsync()
+    {
+        if (SelectedCompany == null)
+        {
+            return;
+        }
+
+        var target = SelectedCompany;
+        if (target.Id != 0)
+        {
+            await _companyService.DeleteAsync(target.Id);
+        }
+
+        Companies.Remove(target);
     }
 }

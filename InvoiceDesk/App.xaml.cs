@@ -59,6 +59,14 @@ public partial class App : Application
 
 			var settingsService = _host.Services.GetRequiredService<UserSettingsService>();
 			var settings = await settingsService.LoadAsync();
+			if (settings.WindowWidth <= 0)
+			{
+				settings.WindowWidth = 1200;
+			}
+			if (settings.WindowHeight <= 0)
+			{
+				settings.WindowHeight = 800;
+			}
 			logger.LogInformation("Settings loaded: culture {Culture} company {CompanyId}", settings.Culture, settings.CompanyId);
 
 			var languageService = _host.Services.GetRequiredService<ILanguageService>();
@@ -76,6 +84,21 @@ public partial class App : Application
 			}
 
 			var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+			if (settings.WindowWidth > 0)
+			{
+				mainWindow.Width = settings.WindowWidth;
+			}
+			if (settings.WindowHeight > 0)
+			{
+				mainWindow.Height = settings.WindowHeight;
+			}
+			mainWindow.Closing += async (_, _) =>
+			{
+				var s = await settingsService.LoadAsync();
+				s.WindowWidth = mainWindow.Width;
+				s.WindowHeight = mainWindow.Height;
+				await settingsService.SaveAsync(s);
+			};
 			logger.LogInformation("Showing MainWindow");
 			mainWindow.Show();
 		}

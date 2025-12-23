@@ -9,9 +9,10 @@
     <DockPanel Margin="12">
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0 0 0 8">
             <Button Content="{Binding Source={StaticResource Loc}, Path=[Save]}" Command="{Binding SaveCommand}" Width="100" Margin="0 0 8 0" />
+            <Button Content="{Binding Source={StaticResource Loc}, Path=[Delete]}" Command="{Binding DeleteCommand}" Width="100" Margin="0 0 8 0" />
             <Button Content="{Binding Source={StaticResource Loc}, Path=[Close]}" Width="100" Click="OnClose" />
         </StackPanel>
-        <DataGrid ItemsSource="{Binding Companies}" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" IsReadOnly="False">
+        <DataGrid ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany, Mode=TwoWay}" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" IsReadOnly="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[NameLabel]}" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="*" />
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[VatLabel]}" Binding="{Binding VatNumber, UpdateSourceTrigger=PropertyChanged}" Width="120" />

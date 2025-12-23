@@ -97,6 +97,7 @@ public static class Strings
     public static string PrefixLabel => Get();
     public static string NextNumberLabel => Get();
     public static string LogoLabel => Get();
+    public static string Delete => Get();
     public static string Close => Get();
     public static string VatRegisteredLabel => Get();
 }

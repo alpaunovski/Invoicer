@@ -198,6 +198,9 @@
   <data name="LogoLabel" xml:space="preserve">
     <value>Logo path</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>

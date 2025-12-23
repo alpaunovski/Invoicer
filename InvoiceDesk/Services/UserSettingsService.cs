@@ -7,6 +7,8 @@ public class UserSettings
 {
     public string Culture { get; set; } = "en";
     public int? CompanyId { get; set; }
+    public double WindowWidth { get; set; } = 1200;
+    public double WindowHeight { get; set; } = 800;
 }
 
 public class UserSettingsService

@@ -40,4 +40,17 @@ public class CompanyService
         await db.SaveChangesAsync(cancellationToken);
         return company;
     }
+
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var entity = await db.Companies.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        if (entity == null)
+        {
+            return;
+        }
+
+        db.Companies.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -8,7 +8,7 @@
         xmlns:helpers="clr-namespace:InvoiceDesk.Helpers"
         xmlns:models="clr-namespace:InvoiceDesk.Models"
         mc:Ignorable="d"
-        Height="900" Width="1400"
+        MinHeight="700" MinWidth="1100"
         Title="{Binding Source={StaticResource Loc}, Path=[AppTitle]}">
     <Window.Resources>
         <helpers:StatusToLocalizedConverter x:Key="StatusConverter" />
