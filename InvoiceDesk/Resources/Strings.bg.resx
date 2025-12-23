@@ -171,6 +171,9 @@
   <data name="VatLabel" xml:space="preserve">
     <value>ДДС</value>
   </data>
+  <data name="EikLabel" xml:space="preserve">
+    <value>ЕИК</value>
+  </data>
   <data name="CountryLabel" xml:space="preserve">
     <value>Държава</value>
   </data>

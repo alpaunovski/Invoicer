@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // Basic company metadata and invoice numbering settings.
         entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
         entity.Property(e => e.VatNumber).HasMaxLength(50).IsRequired();
+        entity.Property(e => e.Eik).HasMaxLength(13);
         entity.Property(e => e.CountryCode).HasMaxLength(8).IsRequired();
         entity.Property(e => e.Address).HasMaxLength(400).IsRequired();
         entity.Property(e => e.BankIban).HasMaxLength(64).IsRequired();
@@ -39,7 +40,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         var entity = modelBuilder.Entity<Customer>();
         // Tenant-aware customer rows; enforce lengths and FK to company.
         entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
-        entity.Property(e => e.VatNumber).HasMaxLength(50).IsRequired();
+        entity.Property(e => e.VatNumber).HasMaxLength(50).IsRequired(false);
+        entity.Property(e => e.Eik).HasMaxLength(13);
         entity.Property(e => e.CountryCode).HasMaxLength(8).IsRequired();
         entity.Property(e => e.Address).HasMaxLength(400).IsRequired();
         entity.Property(e => e.Email).HasMaxLength(200).IsRequired();

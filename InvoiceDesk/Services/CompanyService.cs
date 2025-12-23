@@ -1,6 +1,8 @@
 using InvoiceDesk.Data;
 using InvoiceDesk.Models;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 
 namespace InvoiceDesk.Services;
 
@@ -27,6 +29,9 @@ public class CompanyService
 
     public async Task<Company> SaveAsync(Company company, CancellationToken cancellationToken = default)
     {
+        Normalize(company);
+        Validate(company);
+
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         if (company.Id == 0)
         {
@@ -52,5 +57,52 @@ public class CompanyService
 
         db.Companies.Remove(entity);
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static void Normalize(Company company)
+    {
+        company.Name = company.Name?.Trim() ?? string.Empty;
+        company.VatNumber = company.VatNumber?.Trim() ?? string.Empty;
+        company.Eik = string.IsNullOrWhiteSpace(company.Eik) ? null : company.Eik.Trim();
+        company.CountryCode = company.CountryCode?.Trim() ?? string.Empty;
+        company.Address = company.Address?.Trim() ?? string.Empty;
+        company.BankIban = company.BankIban?.Trim() ?? string.Empty;
+        company.BankBic = company.BankBic?.Trim() ?? string.Empty;
+        company.InvoiceNumberPrefix = string.IsNullOrWhiteSpace(company.InvoiceNumberPrefix)
+            ? null
+            : company.InvoiceNumberPrefix.Trim();
+        company.LogoPath = string.IsNullOrWhiteSpace(company.LogoPath) ? null : company.LogoPath.Trim();
+    }
+
+    private static void Validate(Company company)
+    {
+        var isBg = company.CountryCode.Equals("BG", StringComparison.OrdinalIgnoreCase);
+        if (isBg)
+        {
+            var eik = company.Eik ?? string.Empty;
+            if (eik.Length == 0)
+            {
+                throw new InvalidOperationException("ЕИК е задължителен за български фирми.");
+            }
+
+            if (!(eik.Length == 9 || eik.Length == 13))
+            {
+                throw new InvalidOperationException("ЕИК трябва да има 9 или 13 цифри.");
+            }
+
+            if (!eik.All(char.IsDigit))
+            {
+                throw new InvalidOperationException("ЕИК трябва да съдържа само цифри.");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(company.Eik) && !company.Eik.All(char.IsDigit))
+        {
+            throw new InvalidOperationException("ЕИК трябва да съдържа само цифри.");
+        }
+        if (!string.IsNullOrWhiteSpace(company.Eik) && company.Eik.Length > 13)
+        {
+            throw new InvalidOperationException("ЕИК трябва да има до 13 цифри.");
+        }
     }
 }

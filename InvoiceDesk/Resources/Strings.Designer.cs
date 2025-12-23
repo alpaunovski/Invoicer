@@ -88,6 +88,7 @@ public static class Strings
         public static string MessagePdfExported => Get();
     public static string NameLabel => Get();
     public static string VatLabel => Get();
+    public static string EikLabel => Get();
     public static string CountryLabel => Get();
     public static string AddressLabel => Get();
     public static string EmailLabel => Get();

@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Text;
 using System.IO;
@@ -59,7 +60,29 @@ public class InvoiceHtmlRenderer
         sb.Append($"<h3>{Html(Strings.PdfCompany)}</h3>");
         sb.Append($"<div>{Html(company.Name)}</div>");
         sb.Append($"<div>{Html(company.Address)}</div>");
-        sb.Append($"<div>{Html(company.CountryCode)} | {Html(company.VatNumber)}</div>");
+        if (!string.IsNullOrWhiteSpace(company.CountryCode))
+        {
+            sb.Append($"<div>{Html(company.CountryCode)}</div>");
+        }
+
+        var isBgCompany = company.CountryCode.Equals("BG", StringComparison.OrdinalIgnoreCase);
+        if (isBgCompany)
+        {
+            if (!string.IsNullOrWhiteSpace(company.VatNumber))
+            {
+                sb.Append($"<div>{Html(Strings.VatLabel)}: {Html(company.VatNumber)}</div>");
+            }
+
+            if (!string.IsNullOrWhiteSpace(company.Eik))
+            {
+                sb.Append($"<div>{Html(Strings.EikLabel)}: {Html(company.Eik)}</div>");
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(company.VatNumber))
+        {
+            sb.Append($"<div>{Html(company.CountryCode)} | {Html(company.VatNumber)}</div>");
+        }
+
         sb.Append($"<div>{Html(company.BankIban)} / {Html(company.BankBic)}</div>");
         sb.Append("</div>");
 

@@ -43,7 +43,7 @@ public class InvoiceService
             Currency = "EUR",
             CustomerNameSnapshot = customer.Name,
             CustomerAddressSnapshot = customer.Address,
-            CustomerVatSnapshot = customer.VatNumber
+            CustomerVatSnapshot = SelectCustomerTaxIdentifier(customer)
         };
 
         db.Invoices.Add(invoice);
@@ -92,7 +92,7 @@ public class InvoiceService
             // Persist customer details so later changes do not affect historical invoices.
             existing.CustomerNameSnapshot = existing.Customer.Name;
             existing.CustomerAddressSnapshot = existing.Customer.Address;
-            existing.CustomerVatSnapshot = existing.Customer.VatNumber;
+            existing.CustomerVatSnapshot = SelectCustomerTaxIdentifier(existing.Customer);
         }
 
         UpdateLines(existing, lines);
@@ -134,7 +134,7 @@ public class InvoiceService
         invoice.InvoiceNumber = invoiceNumber;
         invoice.CustomerNameSnapshot = customer.Name;
         invoice.CustomerAddressSnapshot = customer.Address;
-        invoice.CustomerVatSnapshot = customer.VatNumber;
+        invoice.CustomerVatSnapshot = SelectCustomerTaxIdentifier(customer);
         if (string.IsNullOrWhiteSpace(invoice.InvoiceLanguage))
         {
             invoice.InvoiceLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -156,6 +156,17 @@ public class InvoiceService
         var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
         var rand = Random.Shared.Next(1000, 9999);
         return $"{DraftPrefix}-{companyId}-{stamp}-{rand}";
+    }
+
+    private static string SelectCustomerTaxIdentifier(Customer customer)
+    {
+        // Prefer EIK when provided (typically for BG), otherwise fall back to VAT.
+        if (!string.IsNullOrWhiteSpace(customer.Eik))
+        {
+            return customer.Eik;
+        }
+
+        return customer.VatNumber;
     }
 
     private static void UpdateLines(Invoice invoice, IEnumerable<InvoiceLine> incoming)

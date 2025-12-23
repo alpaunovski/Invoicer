@@ -8,15 +8,45 @@
         Title="{Binding Source={StaticResource Loc}, Path=[ManageCompanies]}" Height="450" Width="800">
     <DockPanel Margin="12">
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0 0 0 8">
-            <Button Content="{Binding Source={StaticResource Loc}, Path=[Save]}" Command="{Binding SaveCommand}" Width="100" Margin="0 0 8 0" />
+            <Button Content="{Binding Source={StaticResource Loc}, Path=[Save]}" Width="100" Margin="0 0 8 0" Click="OnSaveClick" />
             <Button Content="{Binding Source={StaticResource Loc}, Path=[Delete]}" Command="{Binding DeleteCommand}" Width="100" Margin="0 0 8 0" />
             <Button Content="{Binding Source={StaticResource Loc}, Path=[Close]}" Width="100" Click="OnClose" />
         </StackPanel>
-        <DataGrid ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany, Mode=TwoWay}" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" IsReadOnly="False">
+        <DataGrid x:Name="CompaniesGrid" ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany, Mode=TwoWay}" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" IsReadOnly="False">
+            <DataGrid.Resources>
+                <Style x:Key="DigitsOnlyBox" TargetType="TextBox">
+                    <EventSetter Event="PreviewTextInput" Handler="OnEikPreviewTextInput" />
+                    <EventSetter Event="DataObject.Pasting" Handler="OnEikPasting" />
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[NameLabel]}" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="*" />
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[VatLabel]}" Binding="{Binding VatNumber, UpdateSourceTrigger=PropertyChanged}" Width="120" />
-                <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[CountryLabel]}" Binding="{Binding CountryCode, UpdateSourceTrigger=PropertyChanged}" Width="80" />
+                <DataGridTextColumn x:Name="EikColumn" Header="{Binding Source={StaticResource Loc}, Path=[EikLabel]}" Width="120" Binding="{Binding Eik, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CountryCode}" Value="BG">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.EditingElementStyle>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource DigitsOnlyBox}">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Setter Property="MaxLength" Value="13" />
+                            </Style>
+                    </DataGridTextColumn.EditingElementStyle>
+                </DataGridTextColumn>
+                <DataGridComboBoxColumn x:Name="CountryColumn"
+                                         Header="{Binding Source={StaticResource Loc}, Path=[CountryLabel]}"
+                                         Width="120"
+                                         SelectedValueBinding="{Binding CountryCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         SelectedValuePath="Code"
+                                         DisplayMemberPath="Label"
+                                         ItemsSource="{Binding DataContext.Countries, RelativeSource={RelativeSource AncestorType=Window}}" />
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[AddressLabel]}" Binding="{Binding Address, UpdateSourceTrigger=PropertyChanged}" Width="200" />
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[IbanLabel]}" Binding="{Binding BankIban, UpdateSourceTrigger=PropertyChanged}" Width="150" />
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[BicLabel]}" Binding="{Binding BankBic, UpdateSourceTrigger=PropertyChanged}" Width="100" />

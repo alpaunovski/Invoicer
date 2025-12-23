@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using InvoiceDesk.Models;
@@ -14,10 +16,13 @@ public partial class CustomerManagementViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<Customer> customers = new();
 
+    public ObservableCollection<CountryOption> Countries { get; } = new();
+
     public CustomerManagementViewModel(CustomerService customerService, ICompanyContext companyContext)
     {
         _customerService = customerService;
         _companyContext = companyContext;
+        LoadCountryOptions();
     }
 
     public async Task LoadAsync()
@@ -46,6 +51,31 @@ public partial class CustomerManagementViewModel : ObservableObject
         foreach (var customer in Customers)
         {
             await _customerService.SaveAsync(customer);
+        }
+    }
+
+    private void LoadCountryOptions()
+    {
+        Countries.Clear();
+
+        var regions = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+            .Select(c => new RegionInfo(c.Name))
+            .GroupBy(r => r.TwoLetterISORegionName)
+            .Select(g => g.First())
+            .OrderByDescending(r => string.Equals(r.TwoLetterISORegionName, "BG", StringComparison.OrdinalIgnoreCase))
+            .ThenBy(r => r.EnglishName);
+
+        var any = false;
+        foreach (var region in regions)
+        {
+            Countries.Add(new CountryOption(region.TwoLetterISORegionName, $"{region.TwoLetterISORegionName} - {region.EnglishName}"));
+            any = true;
+        }
+
+        if (!any)
+        {
+            Countries.Add(new CountryOption("BG", "BG - Bulgaria"));
+            Countries.Add(new CountryOption("US", "US - United States"));
         }
     }
 }

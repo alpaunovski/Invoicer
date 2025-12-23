@@ -31,6 +31,7 @@ public class AppDbInitializer
             {
                 Name = "Default Company",
                 VatNumber = "BG000000000",
+                Eik = "000000000",
                 CountryCode = "BG",
                 Address = "",
                 BankIban = "",

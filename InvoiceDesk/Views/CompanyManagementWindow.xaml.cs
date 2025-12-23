@@ -1,7 +1,12 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Data;
 using InvoiceDesk.Models;
+using InvoiceDesk.Services;
 using InvoiceDesk.ViewModels;
 using Microsoft.Win32;
+using CommunityToolkit.Mvvm.Input;
 
 namespace InvoiceDesk.Views;
 
@@ -9,10 +14,11 @@ public partial class CompanyManagementWindow : Window
 {
     private readonly CompanyManagementViewModel _viewModel;
 
-    public CompanyManagementWindow(CompanyManagementViewModel viewModel)
+    public CompanyManagementWindow(CompanyManagementViewModel viewModel, ILanguageService languageService)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _ = languageService;
         DataContext = _viewModel;
         Loaded += OnLoaded;
     }
@@ -20,6 +26,31 @@ public partial class CompanyManagementWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         await _viewModel.LoadAsync();
+        // Ensure the country dropdown has data even if XAML binding fails to resolve.
+        CountryColumn.ItemsSource = _viewModel.Countries;
+    }
+
+    private async void OnSaveClick(object sender, RoutedEventArgs e)
+    {
+        // Commit any pending cell/row edits so the latest values are saved.
+        CompaniesGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+        CompaniesGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+        try
+        {
+            if (_viewModel.SaveCommand is IAsyncRelayCommand asyncCommand)
+            {
+                await asyncCommand.ExecuteAsync(null);
+            }
+            else if (_viewModel.SaveCommand.CanExecute(null))
+            {
+                _viewModel.SaveCommand.Execute(null);
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            MessageBox.Show(this, ex.Message, "Записване на фирма", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void OnClose(object sender, RoutedEventArgs e)
@@ -60,4 +91,57 @@ public partial class CompanyManagementWindow : Window
             company.LogoPath = dialog.FileName;
         }
     }
+
+    private static bool IsDigitsOnly(string value)
+    {
+        foreach (var ch in value)
+        {
+            if (!char.IsDigit(ch))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsWithinEikLimit(System.Windows.Controls.TextBox textBox, string incoming)
+    {
+        // Account for replacing selected text, not just inserting at the caret.
+        var currentLength = textBox.Text?.Length ?? 0;
+        var proposedLength = currentLength - textBox.SelectionLength + incoming.Length;
+        return proposedLength <= 13;
+    }
+
+    private void OnEikPreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox textBox)
+        {
+            return;
+        }
+
+        e.Handled = !IsDigitsOnly(e.Text) || !IsWithinEikLimit(textBox, e.Text);
+    }
+
+    private void OnEikPasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox textBox)
+        {
+            return;
+        }
+
+        if (e.DataObject.GetDataPresent(DataFormats.Text))
+        {
+            var pasted = e.DataObject.GetData(DataFormats.Text)?.ToString() ?? string.Empty;
+            if (!IsDigitsOnly(pasted) || !IsWithinEikLimit(textBox, pasted))
+            {
+                e.CancelCommand();
+            }
+        }
+        else
+        {
+            e.CancelCommand();
+        }
+    }
+
 }

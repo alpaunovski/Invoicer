@@ -7,6 +7,7 @@ public class Company
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string VatNumber { get; set; } = string.Empty;
+    public string? Eik { get; set; }
     public string CountryCode { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public string BankIban { get; set; } = string.Empty;
