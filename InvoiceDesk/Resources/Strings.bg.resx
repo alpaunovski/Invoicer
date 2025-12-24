@@ -33,6 +33,9 @@
   <data name="ExportPdf" xml:space="preserve">
     <value>Експорт в PDF</value>
   </data>
+  <data name="DeleteInvoice" xml:space="preserve">
+    <value>Изтриване на фактура</value>
+  </data>
   <data name="ManageCompanies" xml:space="preserve">
     <value>Фирми</value>
   </data>
@@ -236,5 +239,17 @@
     </data>
   <data name="MessagePdfExported" xml:space="preserve">
       <value>PDF е генериран в {0} (папка: Exports).</value>
+  </data>
+  <data name="MessageInvoiceDeleteConfirm" xml:space="preserve">
+    <value>Действието е необратимо. Да изтрия ли фактурата?</value>
+  </data>
+  <data name="MessageInvoiceDeleted" xml:space="preserve">
+    <value>Фактурата е изтрита.</value>
+  </data>
+  <data name="MessageInvoiceDeleteFailed" xml:space="preserve">
+    <value>Изтриването се провали. Само чернови могат да се изтриват.</value>
+  </data>
+  <data name="MessageDeleteDraftOnly" xml:space="preserve">
+    <value>Само чернови могат да се изтриват.</value>
   </data>
 </root>

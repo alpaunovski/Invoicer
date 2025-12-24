@@ -269,6 +269,41 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task DeleteInvoiceAsync()
+    {
+        if (SelectedInvoice == null)
+        {
+            return;
+        }
+
+        if (!SelectedInvoice.IsDraft)
+        {
+            StatusMessage = Strings.MessageDeleteDraftOnly;
+            MessageBox.Show(Strings.MessageDeleteDraftOnly, Strings.DeleteInvoice, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var confirm = MessageBox.Show(Strings.MessageInvoiceDeleteConfirm, Strings.DeleteInvoice, MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.OK)
+        {
+            return;
+        }
+
+        var deleted = await _invoiceService.DeleteInvoiceAsync(SelectedInvoice.Id);
+        if (!deleted)
+        {
+            StatusMessage = Strings.MessageInvoiceDeleteFailed;
+            MessageBox.Show(Strings.MessageInvoiceDeleteFailed, Strings.DeleteInvoice, MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        await LoadInvoicesAsync();
+        SelectedInvoice = null;
+        SelectedInvoiceSummary = Invoices.FirstOrDefault();
+        StatusMessage = Strings.MessageInvoiceDeleted;
+    }
+
+    [RelayCommand]
     private async Task ExportPdfAsync()
     {
         if (SelectedInvoice == null || !SelectedInvoice.IsIssued)

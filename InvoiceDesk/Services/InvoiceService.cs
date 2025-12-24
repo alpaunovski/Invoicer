@@ -151,6 +151,33 @@ public class InvoiceService
         return invoice;
     }
 
+    public async Task<bool> DeleteInvoiceAsync(int invoiceId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
+
+        var invoice = await db.Invoices
+            .Include(i => i.Lines)
+            .FirstOrDefaultAsync(i => i.Id == invoiceId && i.CompanyId == _companyContext.CurrentCompanyId, cancellationToken);
+
+        if (invoice == null)
+        {
+            return false;
+        }
+
+        if (invoice.Status != InvoiceStatus.Draft || invoice.IssuedAtUtc != null)
+        {
+            // Issued/locked invoices should not be deleted; keep data intact.
+            return false;
+        }
+
+        db.InvoiceLines.RemoveRange(invoice.Lines);
+        db.Invoices.Remove(invoice);
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
+    }
+
     private static string GenerateDraftNumber(int companyId)
     {
         var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");

@@ -33,6 +33,9 @@
   <data name="ExportPdf" xml:space="preserve">
     <value>Export PDF</value>
   </data>
+  <data name="DeleteInvoice" xml:space="preserve">
+    <value>Delete Invoice</value>
+  </data>
   <data name="ManageCompanies" xml:space="preserve">
     <value>Companies</value>
   </data>
@@ -172,7 +175,7 @@
     <value>VAT</value>
   </data>
   <data name="EikLabel" xml:space="preserve">
-    <value>ЕИК</value>
+    <value>EIK</value>
   </data>
   <data name="CountryLabel" xml:space="preserve">
     <value>Country</value>
@@ -236,5 +239,17 @@
   </data>
   <data name="MessagePdfExported" xml:space="preserve">
     <value>PDF exported to {0} (folder: Exports)</value>
+  </data>
+  <data name="MessageInvoiceDeleteConfirm" xml:space="preserve">
+    <value>This action cannot be undone. Delete the invoice?</value>
+  </data>
+  <data name="MessageInvoiceDeleted" xml:space="preserve">
+    <value>Invoice deleted.</value>
+  </data>
+  <data name="MessageInvoiceDeleteFailed" xml:space="preserve">
+    <value>Delete failed. Only draft invoices can be deleted.</value>
+  </data>
+  <data name="MessageDeleteDraftOnly" xml:space="preserve">
+    <value>Only draft invoices can be deleted.</value>
   </data>
 </root>

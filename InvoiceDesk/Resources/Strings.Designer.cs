@@ -33,6 +33,7 @@ public static class Strings
     public static string Save => Get();
     public static string Issue => Get();
     public static string ExportPdf => Get();
+    public static string DeleteInvoice => Get();
     public static string ManageCompanies => Get();
     public static string ManageCustomers => Get();
     public static string InvoiceList => Get();
@@ -86,6 +87,10 @@ public static class Strings
     public static string MessagePdfIssuedOnly => Get();
         public static string MessageExportingPdf => Get();
         public static string MessagePdfExported => Get();
+    public static string MessageInvoiceDeleteConfirm => Get();
+    public static string MessageInvoiceDeleted => Get();
+    public static string MessageInvoiceDeleteFailed => Get();
+    public static string MessageDeleteDraftOnly => Get();
     public static string NameLabel => Get();
     public static string VatLabel => Get();
     public static string EikLabel => Get();
