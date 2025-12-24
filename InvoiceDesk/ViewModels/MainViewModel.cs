@@ -75,6 +75,14 @@ public partial class MainViewModel : ObservableObject
         new CultureOption("bg", "Български")
     };
 
+    public ObservableCollection<string> Currencies { get; } = new()
+    {
+        "EUR",
+        "USD",
+        "GBP",
+        "BGN"
+    };
+
     public MainViewModel(
         CompanyService companyService,
         CustomerService customerService,
@@ -237,21 +245,34 @@ public partial class MainViewModel : ObservableObject
     {
         if (SelectedInvoice == null)
         {
+            StatusMessage = "Select an invoice first";
+            MessageBox.Show(StatusMessage, Strings.Save, MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
         if (!SelectedInvoice.IsDraft)
         {
             StatusMessage = Strings.MessageSaveDraftOnly;
+            MessageBox.Show(StatusMessage, Strings.Save, MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
-        SelectedInvoice.RecalculateTotals();
-        var entity = SelectedInvoice.ToEntity();
-        await _invoiceService.SaveInvoiceAsync(entity, entity.Lines);
-        await LoadInvoicesAsync();
-        await SelectInvoiceAsync(entity.Id);
-        StatusMessage = Strings.MessageInvoiceSaved;
+        try
+        {
+            SelectedInvoice.RecalculateTotals();
+            var entity = SelectedInvoice.ToEntity();
+            await _invoiceService.SaveInvoiceAsync(entity, entity.Lines);
+            await LoadInvoicesAsync();
+            await SelectInvoiceAsync(entity.Id);
+            StatusMessage = Strings.MessageInvoiceSaved;
+            MessageBox.Show(StatusMessage, Strings.Save, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Save invoice failed for {InvoiceId}", SelectedInvoice.Id);
+            StatusMessage = $"Save failed: {ex.Message}";
+            MessageBox.Show(StatusMessage, Strings.Save, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     [RelayCommand]
@@ -309,6 +330,7 @@ public partial class MainViewModel : ObservableObject
         if (SelectedInvoice == null || !SelectedInvoice.IsIssued)
         {
             StatusMessage = Strings.MessagePdfIssuedOnly;
+            MessageBox.Show(StatusMessage, Strings.ExportPdf, MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -323,6 +345,7 @@ public partial class MainViewModel : ObservableObject
         {
             _logger.LogError(ex, "PDF export failed for invoice {InvoiceId}", SelectedInvoice.Id);
             StatusMessage = $"PDF export failed: {ex.Message}";
+            MessageBox.Show(StatusMessage, Strings.ExportPdf, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

@@ -96,7 +96,7 @@
                             <TextBlock Text="{Binding Source={StaticResource Loc}, Path=[InvoiceLanguageLabel]}" />
                             <ComboBox ItemsSource="{Binding Cultures}" SelectedValuePath="Code" DisplayMemberPath="Label" SelectedValue="{Binding SelectedInvoice.InvoiceLanguage, Mode=TwoWay}" IsEnabled="{Binding SelectedInvoice.IsDraft}" />
                             <TextBlock Text="{Binding Source={StaticResource Loc}, Path=[Currency]}" />
-                            <TextBox Text="{Binding SelectedInvoice.Currency, Mode=TwoWay}" IsEnabled="{Binding SelectedInvoice.IsDraft}" />
+                            <ComboBox ItemsSource="{Binding Currencies}" SelectedItem="{Binding SelectedInvoice.Currency, Mode=TwoWay}" IsEnabled="{Binding SelectedInvoice.IsDraft}" />
                             <TextBlock Text="{Binding Source={StaticResource Loc}, Path=[VatLabel]}" />
                             <TextBox Text="{Binding SelectedCompany.VatNumber}" IsReadOnly="True" />
                             <TextBlock Text="{Binding Source={StaticResource Loc}, Path=[EikLabel]}">
