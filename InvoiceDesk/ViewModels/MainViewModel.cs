@@ -391,7 +391,7 @@ public partial class MainViewModel : ObservableObject
         Invoices = new ObservableCollection<Invoice>(results);
         if (SelectedInvoice != null)
         {
-            SelectedInvoiceSummary = Invoices.FirstOrDefault(i => i.Id == SelectedInvoice.Id);
+            SelectedInvoiceSummary = Invoices.FirstOrDefault(i => i.Id == SelectedInvoice.Id); // Preserve selection after refresh when possible.
         }
         else
         {
