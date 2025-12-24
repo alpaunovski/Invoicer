@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,14 +15,17 @@ namespace InvoiceDesk.Views;
 public partial class CompanyManagementWindow : Window
 {
     private readonly CompanyManagementViewModel _viewModel;
+    private readonly ILanguageService _languageService;
 
     public CompanyManagementWindow(CompanyManagementViewModel viewModel, ILanguageService languageService)
     {
         InitializeComponent();
         _viewModel = viewModel;
-        _ = languageService;
+        _languageService = languageService;
         DataContext = _viewModel;
         Loaded += OnLoaded;
+        _languageService.CultureChanged += OnCultureChanged;
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -28,6 +33,7 @@ public partial class CompanyManagementWindow : Window
         await _viewModel.LoadAsync();
         // Ensure the country dropdown has data even if XAML binding fails to resolve.
         CountryColumn.ItemsSource = _viewModel.Countries;
+        UpdateEikVisibility();
     }
 
     private async void OnSaveClick(object sender, RoutedEventArgs e)
@@ -142,6 +148,24 @@ public partial class CompanyManagementWindow : Window
         {
             e.CancelCommand();
         }
+    }
+
+    private void OnCultureChanged(object? sender, CultureInfo e)
+    {
+        UpdateEikVisibility();
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CompanyManagementViewModel.IsBulgarianUi))
+        {
+            UpdateEikVisibility();
+        }
+    }
+
+    private void UpdateEikVisibility()
+    {
+        EikColumn.Visibility = _viewModel.IsBulgarianUi ? Visibility.Visible : Visibility.Collapsed;
     }
 
 }

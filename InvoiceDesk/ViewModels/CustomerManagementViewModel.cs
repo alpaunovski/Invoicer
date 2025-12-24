@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
@@ -12,18 +13,24 @@ public partial class CustomerManagementViewModel : ObservableObject
 {
     private readonly CustomerService _customerService;
     private readonly ICompanyContext _companyContext;
+    private readonly ILanguageService _languageService;
 
     [ObservableProperty]
     private ObservableCollection<Customer> customers = new();
 
     public ObservableCollection<CountryOption> Countries { get; } = new();
 
-    public CustomerManagementViewModel(CustomerService customerService, ICompanyContext companyContext)
+    public CustomerManagementViewModel(CustomerService customerService, ICompanyContext companyContext, ILanguageService languageService)
     {
         _customerService = customerService;
         _companyContext = companyContext;
+        _languageService = languageService;
+        _languageService.CultureChanged += OnCultureChanged;
+        OnPropertyChanged(nameof(IsBulgarianUi));
         LoadCountryOptions();
     }
+
+    public bool IsBulgarianUi => string.Equals(_languageService.CurrentCulture.TwoLetterISOLanguageName, "bg", StringComparison.OrdinalIgnoreCase);
 
     public async Task LoadAsync()
     {
@@ -52,6 +59,11 @@ public partial class CustomerManagementViewModel : ObservableObject
         {
             await _customerService.SaveAsync(customer);
         }
+    }
+
+    private void OnCultureChanged(object? sender, CultureInfo culture)
+    {
+        OnPropertyChanged(nameof(IsBulgarianUi));
     }
 
     private void LoadCountryOptions()
