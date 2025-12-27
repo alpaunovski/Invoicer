@@ -10,7 +10,7 @@ public class Customer : INotifyPropertyChanged
     private int _companyId;
     private string _name = string.Empty;
     private string _vatNumber = string.Empty;
-    private string _eik = string.Empty;
+    private string? _eik;
     private string _countryCode = string.Empty;
     private bool _isVatRegistered;
     private string _address = string.Empty;
@@ -41,7 +41,7 @@ public class Customer : INotifyPropertyChanged
         set => SetField(ref _vatNumber, value);
     }
 
-    public string Eik
+    public string? Eik
     {
         get => _eik;
         set => SetField(ref _eik, value);

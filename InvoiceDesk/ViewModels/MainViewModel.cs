@@ -165,6 +165,14 @@ public partial class MainViewModel : ObservableObject
     private async Task OnCompanyChangedAsync(int companyId)
     {
         SelectedCompany = Companies.FirstOrDefault(c => c.Id == companyId);
+        // Clear company-scoped selections so the UI refreshes with the new tenant's data.
+        SelectedCustomerFilter = null;
+        SelectedCustomerForDraft = null;
+        SelectedInvoice = null;
+        SelectedInvoiceSummary = null;
+        SearchText = null;
+        FromDate = null;
+        ToDate = null;
         await LoadCustomersAsync();
         await LoadInvoicesAsync();
         var settings = await _settingsService.LoadAsync();
@@ -426,7 +434,7 @@ public partial class MainViewModel : ObservableObject
     {
         var list = await _customerService.GetCustomersAsync();
         Customers = new ObservableCollection<Customer>(list);
-        SelectedCustomerForDraft ??= Customers.FirstOrDefault();
+        SelectedCustomerForDraft = Customers.FirstOrDefault();
     }
 
     private void RefreshVatTypes()
