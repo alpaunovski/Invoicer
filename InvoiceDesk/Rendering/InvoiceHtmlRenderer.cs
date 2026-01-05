@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.IO;
 using System.Linq;
+using InvoiceDesk.Helpers;
 using InvoiceDesk.Models;
 using InvoiceDesk.Resources;
 
@@ -10,14 +11,23 @@ namespace InvoiceDesk.Rendering;
 
 public class InvoiceHtmlRenderer
 {
+    private readonly CurrencyDisplayOptions _currencyOptions;
+
+    public InvoiceHtmlRenderer(CurrencyDisplayOptions currencyOptions)
+    {
+        _currencyOptions = currencyOptions;
+    }
+
     public string RenderHtml(Company company, Invoice invoice, IList<InvoiceLine> lines, CultureInfo invoiceCulture)
     {
         // Use invariant culture so numeric formatting stays stable regardless of UI locale.
         var numberCulture = CultureInfo.InvariantCulture;
         var previousCulture = Strings.Culture;
         Strings.Culture = invoiceCulture;
-        var vatSummary = BuildVatSummary(lines, numberCulture);
-        var legalTexts = BuildLegalTexts(lines);
+        var primaryCurrency = CurrencyHelper.NormalizeCurrencyOrDefault(invoice.Currency);
+        var dualCurrencyActive = CurrencyHelper.ShouldShowDualCurrency(_currencyOptions, primaryCurrency);
+        var vatSummary = BuildVatSummary(lines, numberCulture, dualCurrencyActive);
+        var legalTexts = BuildLegalTexts(lines, dualCurrencyActive);
 
         try
         {
@@ -35,6 +45,7 @@ public class InvoiceHtmlRenderer
             sb.Append(".address-block { width: 48%; display: inline-block; vertical-align: top; } .meta { margin-top: 10px; } .badge { padding: 4px 8px; border-radius: 4px; background: #223a5e; color: white; font-size: 12px; display: inline-block; } ");
             sb.Append(".notes { margin-top: 20px; } .legal { font-size: 11px; color: #333; margin-top: 12px; } ");
             sb.Append(".logo-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; } .logo { max-height: 80px; display: block; } .company-title { margin: 0; }");
+            sb.Append(".money { text-align: right; } .money .primary { font-weight: 600; } .money .secondary { color: #444; font-size: 11px; } .dual-note { font-size: 11px; color: #333; margin-top: 8px; }");
             sb.Append("</style></head><body>");
 
         sb.Append("<div class='header'>");
@@ -115,19 +126,19 @@ public class InvoiceHtmlRenderer
             sb.Append("<tr>");
             sb.Append($"<td>{Html(line.Description)}</td>");
             sb.Append($"<td style='text-align:right'>{line.Qty.ToString("0.###", numberCulture)}</td>");
-            sb.Append($"<td style='text-align:right'>{line.UnitPrice.ToString("0.00", numberCulture)}</td>");
+            sb.Append($"<td class='money'>{FormatMoney(line.UnitPrice, numberCulture, dualCurrencyActive)}</td>");
             sb.Append($"<td style='text-align:right'>{line.TaxRate.ToString("0.####", numberCulture)}</td>");
             sb.Append($"<td>{Html(GetVatLabel(line.VatType))}</td>");
-            sb.Append($"<td style='text-align:right'>{line.LineTotal.ToString("0.00", numberCulture)}</td>");
+            sb.Append($"<td class='money'>{FormatMoney(line.LineTotal, numberCulture, dualCurrencyActive)}</td>");
             sb.Append("</tr>");
         }
 
         sb.Append("</tbody></table>");
 
         sb.Append("<table class='totals'>");
-        sb.Append($"<tr><td class='label'>{Html(Strings.PdfSubTotalLabel)}</td><td style='text-align:right'>{invoice.SubTotal.ToString("0.00", numberCulture)}</td></tr>");
-        sb.Append($"<tr><td class='label'>{Html(Strings.PdfTaxTotalLabel)}</td><td style='text-align:right'>{invoice.TaxTotal.ToString("0.00", numberCulture)}</td></tr>");
-        sb.Append($"<tr><td class='label'>{Html(Strings.PdfGrandTotalLabel)}</td><td style='text-align:right'>{invoice.Total.ToString("0.00", numberCulture)}</td></tr>");
+        sb.Append($"<tr><td class='label'>{Html(Strings.PdfSubTotalLabel)}</td><td class='money'>{FormatMoney(invoice.SubTotal, numberCulture, dualCurrencyActive)}</td></tr>");
+        sb.Append($"<tr><td class='label'>{Html(Strings.PdfTaxTotalLabel)}</td><td class='money'>{FormatMoney(invoice.TaxTotal, numberCulture, dualCurrencyActive)}</td></tr>");
+        sb.Append($"<tr><td class='label'>{Html(Strings.PdfGrandTotalLabel)}</td><td class='money'>{FormatMoney(invoice.Total, numberCulture, dualCurrencyActive)}</td></tr>");
         sb.Append("</table>");
 
         sb.Append("<div style='clear:both;'></div>");
@@ -236,7 +247,7 @@ public class InvoiceHtmlRenderer
         };
     }
 
-    private static List<string> BuildVatSummary(IEnumerable<InvoiceLine> lines, CultureInfo culture)
+    private static List<string> BuildVatSummary(IEnumerable<InvoiceLine> lines, CultureInfo culture, bool dualCurrencyActive)
     {
         var grouped = lines.GroupBy(l => l.VatType);
         var items = new List<string>();
@@ -244,15 +255,44 @@ public class InvoiceHtmlRenderer
         {
             var amount = group.Sum(l => l.LineTotal);
             var label = GetVatLabel(group.Key);
-            items.Add($"{label}: {amount.ToString("0.00", culture)}");
+            items.Add(FormatVatSummary(label, amount, culture, dualCurrencyActive));
         }
 
         return items;
     }
 
-    private static List<string> BuildLegalTexts(IEnumerable<InvoiceLine> lines)
+    private static string FormatVatSummary(string label, decimal amountBgn, CultureInfo culture, bool dualCurrencyActive)
+    {
+        var builder = new StringBuilder();
+        builder.Append($"{label}: {amountBgn.ToString("0.00", culture)} BGN");
+        if (dualCurrencyActive)
+        {
+            var eur = CurrencyHelper.ConvertBgnToEur(amountBgn).ToString("0.00", culture);
+            builder.Append($" ({eur} EUR)");
+        }
+
+        return builder.ToString();
+    }
+
+    private static string FormatMoney(decimal amountBgn, CultureInfo culture, bool dualCurrencyActive)
+    {
+        if (!dualCurrencyActive)
+        {
+            return $"{amountBgn.ToString("0.00", culture)} BGN";
+        }
+
+        var eur = CurrencyHelper.ConvertBgnToEur(amountBgn).ToString("0.00", culture);
+        return $"<div class='primary'>{amountBgn.ToString("0.00", culture)} BGN</div><div class='secondary'>({eur} EUR)</div>";
+    }
+
+    private static List<string> BuildLegalTexts(IEnumerable<InvoiceLine> lines, bool includeDualCurrencyNote)
     {
         var texts = new List<string>();
+        if (includeDualCurrencyNote)
+        {
+            // Legally required note: EUR amounts are informational, calculated at the fixed rate.
+            texts.Add(CurrencyHelper.DualCurrencyLegalNote);
+        }
         if (lines.Any(l => l.VatType == VatType.IntraEuReverseCharge))
         {
             texts.Add(Strings.PdfLegalReverseCharge);

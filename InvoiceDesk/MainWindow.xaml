@@ -12,6 +12,7 @@
         Title="{Binding Source={StaticResource Loc}, Path=[AppTitle]}">
     <Window.Resources>
         <helpers:StatusToLocalizedConverter x:Key="StatusConverter" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
     <DockPanel>
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="12" VerticalAlignment="Center">
@@ -174,10 +175,19 @@
                                 <TextBlock Text="{Binding Source={StaticResource Loc}, Path=[TaxTotal]}" />
                                 <TextBlock FontWeight="Bold" Text="{Binding Source={StaticResource Loc}, Path=[Total]}" />
                             </StackPanel>
-                            <StackPanel>
-                                <TextBlock Text="{Binding SelectedInvoice.SubTotal, StringFormat=F2}" />
-                                <TextBlock Text="{Binding SelectedInvoice.TaxTotal, StringFormat=F2}" />
-                                <TextBlock FontWeight="Bold" Text="{Binding SelectedInvoice.Total, StringFormat=F2}" />
+                            <StackPanel Margin="8 0 0 0">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding SelectedInvoice.SubTotal, StringFormat={}{0:F2} BGN}" />
+                                    <TextBlock FontSize="11" Foreground="#555" Text="{Binding SubTotalEur, StringFormat='({0:F2} EUR)'}" Visibility="{Binding ShouldShowDualCurrency, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
+                                <StackPanel Margin="0 6 0 0">
+                                    <TextBlock Text="{Binding SelectedInvoice.TaxTotal, StringFormat={}{0:F2} BGN}" />
+                                    <TextBlock FontSize="11" Foreground="#555" Text="{Binding TaxTotalEur, StringFormat='({0:F2} EUR)'}" Visibility="{Binding ShouldShowDualCurrency, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
+                                <StackPanel Margin="0 6 0 0">
+                                    <TextBlock FontWeight="Bold" Text="{Binding SelectedInvoice.Total, StringFormat={}{0:F2} BGN}" />
+                                    <TextBlock FontSize="11" Foreground="#555" FontWeight="Bold" Text="{Binding TotalEur, StringFormat='({0:F2} EUR)'}" Visibility="{Binding ShouldShowDualCurrency, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </Grid>

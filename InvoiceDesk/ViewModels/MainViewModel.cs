@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -24,6 +25,8 @@ public partial class MainViewModel : ObservableObject
     private readonly ICompanyContext _companyContext;
     private readonly UserSettingsService _settingsService;
     private readonly ILogger<MainViewModel> _logger;
+    private readonly CurrencyDisplayOptions _currencyOptions;
+    private InvoiceViewModel? _selectedInvoiceListener;
 
     [ObservableProperty]
     private ObservableCollection<Company> companies = new();
@@ -77,11 +80,23 @@ public partial class MainViewModel : ObservableObject
 
     public ObservableCollection<string> Currencies { get; } = new()
     {
-        "EUR",
-        "USD",
-        "GBP",
-        "BGN"
+        "BGN",
+        "EUR"
     };
+
+    public bool ShouldShowDualCurrency => SelectedInvoice != null && CurrencyHelper.ShouldShowDualCurrency(_currencyOptions, SelectedInvoice.Currency);
+
+    public decimal SubTotalEur => ShouldShowDualCurrency && SelectedInvoice != null
+        ? CurrencyHelper.ConvertBgnToEur(SelectedInvoice.SubTotal)
+        : 0m;
+
+    public decimal TaxTotalEur => ShouldShowDualCurrency && SelectedInvoice != null
+        ? CurrencyHelper.ConvertBgnToEur(SelectedInvoice.TaxTotal)
+        : 0m;
+
+    public decimal TotalEur => ShouldShowDualCurrency && SelectedInvoice != null
+        ? CurrencyHelper.ConvertBgnToEur(SelectedInvoice.Total)
+        : 0m;
 
     public MainViewModel(
         CompanyService companyService,
@@ -89,6 +104,7 @@ public partial class MainViewModel : ObservableObject
         InvoiceQueryService invoiceQueryService,
         InvoiceService invoiceService,
         PdfExportService pdfExportService,
+        CurrencyDisplayOptions currencyOptions,
         ILanguageService languageService,
         ICompanyContext companyContext,
         UserSettingsService settingsService,
@@ -99,6 +115,7 @@ public partial class MainViewModel : ObservableObject
         _invoiceQueryService = invoiceQueryService;
         _invoiceService = invoiceService;
         _pdfExportService = pdfExportService;
+        _currencyOptions = currencyOptions;
         _languageService = languageService;
         _companyContext = companyContext;
         _settingsService = settingsService;
@@ -136,6 +153,26 @@ public partial class MainViewModel : ObservableObject
         {
             ChangeCultureCommand.Execute(null);
         }
+    }
+
+    partial void OnSelectedInvoiceChanged(InvoiceViewModel? value)
+    {
+        if (_selectedInvoiceListener != null)
+        {
+            _selectedInvoiceListener.PropertyChanged -= OnSelectedInvoicePropertyChanged;
+        }
+
+        _selectedInvoiceListener = value;
+
+        if (value != null)
+        {
+            value.PropertyChanged += OnSelectedInvoicePropertyChanged;
+        }
+
+        OnPropertyChanged(nameof(ShouldShowDualCurrency));
+        OnPropertyChanged(nameof(SubTotalEur));
+        OnPropertyChanged(nameof(TaxTotalEur));
+        OnPropertyChanged(nameof(TotalEur));
     }
 
     public async Task InitializeAsync()
@@ -446,5 +483,19 @@ public partial class MainViewModel : ObservableObject
             new VatTypeOption { Value = VatType.ExportOutsideEu, Label = Strings.VatTypeExportOutsideEu },
             new VatTypeOption { Value = VatType.VatExempt, Label = Strings.VatTypeExempt }
         });
+    }
+
+    private void OnSelectedInvoicePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(InvoiceViewModel.SubTotal)
+            or nameof(InvoiceViewModel.TaxTotal)
+            or nameof(InvoiceViewModel.Total)
+            or nameof(InvoiceViewModel.Currency))
+        {
+            OnPropertyChanged(nameof(ShouldShowDualCurrency));
+            OnPropertyChanged(nameof(SubTotalEur));
+            OnPropertyChanged(nameof(TaxTotalEur));
+            OnPropertyChanged(nameof(TotalEur));
+        }
     }
 }

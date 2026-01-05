@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using InvoiceDesk.Helpers;
 using InvoiceDesk.Models;
 
 namespace InvoiceDesk.ViewModels;
@@ -28,7 +29,7 @@ public partial class InvoiceViewModel : ObservableObject
     private string invoiceLanguage = "en";
 
     [ObservableProperty]
-    private string currency = "EUR";
+    private string currency = "BGN";
 
     [ObservableProperty]
     private decimal subTotal;
@@ -109,7 +110,7 @@ public partial class InvoiceViewModel : ObservableObject
             IssueDate = invoice.IssueDate,
             Status = invoice.Status,
             InvoiceLanguage = string.IsNullOrWhiteSpace(invoice.InvoiceLanguage) ? "en" : invoice.InvoiceLanguage,
-            Currency = invoice.Currency,
+            Currency = CurrencyHelper.NormalizeCurrencyOrDefault(invoice.Currency),
             SubTotal = invoice.SubTotal,
             TaxTotal = invoice.TaxTotal,
             Total = invoice.Total,
@@ -132,7 +133,7 @@ public partial class InvoiceViewModel : ObservableObject
             IssueDate = IssueDate,
             Status = Status,
             InvoiceLanguage = string.IsNullOrWhiteSpace(InvoiceLanguage) ? "en" : InvoiceLanguage,
-            Currency = Currency,
+            Currency = CurrencyHelper.NormalizeCurrencyOrDefault(Currency),
             SubTotal = SubTotal,
             TaxTotal = TaxTotal,
             Total = Total,

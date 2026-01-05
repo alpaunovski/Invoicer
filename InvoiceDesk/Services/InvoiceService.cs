@@ -1,5 +1,6 @@
 using System.Globalization;
 using InvoiceDesk.Data;
+using InvoiceDesk.Helpers;
 using InvoiceDesk.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -40,7 +41,7 @@ public class InvoiceService
             Status = InvoiceStatus.Draft,
             IssueDate = DateTime.Today,
             InvoiceLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName,
-            Currency = "EUR",
+            Currency = CurrencyHelper.NormalizeCurrencyOrDefault("BGN"),
             CustomerNameSnapshot = customer.Name,
             CustomerAddressSnapshot = customer.Address,
             CustomerVatSnapshot = SelectCustomerTaxIdentifier(customer)
@@ -72,7 +73,7 @@ public class InvoiceService
         existing.InvoiceLanguage = string.IsNullOrWhiteSpace(invoice.InvoiceLanguage)
             ? existing.InvoiceLanguage
             : invoice.InvoiceLanguage;
-        existing.Currency = invoice.Currency;
+        existing.Currency = CurrencyHelper.NormalizeCurrencyOrDefault(invoice.Currency);
         existing.Notes = invoice.Notes;
 
         if (string.IsNullOrWhiteSpace(existing.InvoiceNumber))
@@ -125,6 +126,7 @@ public class InvoiceService
 
         var company = invoice.Company ?? throw new InvalidOperationException("Invoice company missing");
         var customer = invoice.Customer ?? throw new InvalidOperationException("Invoice customer missing");
+        invoice.Currency = CurrencyHelper.NormalizeCurrencyOrDefault(invoice.Currency);
 
         var invoiceNumber = string.IsNullOrWhiteSpace(company.InvoiceNumberPrefix)
             ? company.NextInvoiceNumber.ToString()

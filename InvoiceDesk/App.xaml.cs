@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace InvoiceDesk;
 
@@ -146,6 +147,8 @@ public partial class App : Application
 								   ?? throw new InvalidOperationException("Missing connection string");
 
 			services.AddSingleton<LocalizedStrings>();
+			services.Configure<CurrencyDisplayOptions>(context.Configuration.GetSection("CurrencyDisplay"));
+			services.AddSingleton(sp => sp.GetRequiredService<IOptions<CurrencyDisplayOptions>>().Value);
 			services.AddSingleton<UserSettingsService>();
 			services.AddSingleton<ILanguageService, LanguageService>();
 			services.AddSingleton<ICompanyContext, CompanyContext>();
