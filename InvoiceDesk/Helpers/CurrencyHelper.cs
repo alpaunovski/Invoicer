@@ -6,6 +6,10 @@ namespace InvoiceDesk.Helpers;
 /// Centralizes legally mandated currency conversion for Bulgaria's euro transition.
 /// BGN stays the accounting base; EUR is derived display-only using the fixed rate.
 /// </summary>
+/// EUR values are display-only and legally required during the euro transition period.
+/// Conversion rate is fixed by law: 1 EUR = 1.95583 BGN.
+/// Do NOT modify without legal review.
+
 public static class CurrencyHelper
 {
     // Fixed conversion rate set by law: 1 EUR = 1.95583 BGN.
