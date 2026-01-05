@@ -30,6 +30,9 @@ InvoiceDesk/logs/app.log
 # Top Secret files
 **/MyTopSecretInfos.txt
 
+# InvoiceDesk specific ignores
+InvoiceDesk/Exports/
+
 
 # .NET Core
 project.lock.json
