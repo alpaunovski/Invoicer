@@ -31,7 +31,7 @@ InvoiceDesk/logs/app.log
 **/MyTopSecretInfos.txt
 
 # InvoiceDesk specific ignores
-InvoiceDesk/Exports/
+# InvoiceDesk/Exports/
 
 
 # .NET Core
