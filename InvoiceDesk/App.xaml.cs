@@ -218,7 +218,7 @@ public partial class App : Application
 			}
 			catch
 			{
-				// Avoid recursive failures.
+				// Never throw from global logging hooks; we are already in an error path.
 			}
 		};
 
@@ -232,7 +232,7 @@ public partial class App : Application
 			}
 			catch
 			{
-				// Avoid recursive failures.
+				// Never throw from global logging hooks; we are already in an error path.
 			}
 		};
 
@@ -245,7 +245,7 @@ public partial class App : Application
 			}
 			catch
 			{
-				// Avoid recursive failures.
+				// Never throw from global logging hooks; we are already in an error path.
 			}
 		};
 
@@ -257,7 +257,7 @@ public partial class App : Application
 			}
 			catch
 			{
-				// Avoid recursive failures.
+				// Never throw from global logging hooks; we are already in an error path.
 			}
 		};
 
@@ -344,7 +344,7 @@ public partial class App : Application
 		}
 		catch
 		{
-			// Swallow to avoid secondary failures.
+			// Best-effort logging only; never throw from the fallback logger path.
 		}
 	}
 

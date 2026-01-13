@@ -21,7 +21,7 @@ public class AppDbInitializer
         // Apply pending migrations so the app can run without manual database setup.
         await db.Database.MigrateAsync(cancellationToken);
 
-        // Clean up legacy data issues that could break unique constraints.
+        // Backfill missing invoice numbers to satisfy the unique index.
         await FixMissingInvoiceNumbersAsync(db, cancellationToken);
 
         if (!await db.Companies.AnyAsync(cancellationToken))
@@ -58,7 +58,7 @@ public class AppDbInitializer
 
         foreach (var invoice in missing)
         {
-            // Use deterministic prefix plus invoice ID to avoid collisions.
+            // Use a timestamped prefix with company/invoice IDs to avoid collisions when backfilling.
             invoice.InvoiceNumber = GenerateRepairNumber(invoice.CompanyId, invoice.Id);
         }
 

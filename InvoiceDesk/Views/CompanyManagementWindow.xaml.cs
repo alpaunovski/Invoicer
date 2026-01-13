@@ -87,7 +87,7 @@ public partial class CompanyManagementWindow : Window
             }
             catch
             {
-                // ignore invalid initial path
+                // Ignore invalid initial paths and fall back to the default dialog location.
             }
         }
 
