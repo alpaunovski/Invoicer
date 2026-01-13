@@ -267,4 +267,7 @@
   <data name="MessageCustomerSaved" xml:space="preserve">
     <value>Customer saved.</value>
   </data>
+  <data name="MessageCompanySaved" xml:space="preserve">
+    <value>Company saved.</value>
+  </data>
 </root>

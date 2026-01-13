@@ -267,4 +267,7 @@
   <data name="MessageCustomerSaved" xml:space="preserve">
     <value>Клиентът е записан.</value>
   </data>
+  <data name="MessageCompanySaved" xml:space="preserve">
+    <value>Фирмата е записана.</value>
+  </data>
 </root>

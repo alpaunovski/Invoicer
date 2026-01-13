@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Data;
 using InvoiceDesk.Models;
+using InvoiceDesk.Resources;
 using InvoiceDesk.Services;
 using InvoiceDesk.ViewModels;
 using Microsoft.Win32;
@@ -52,10 +53,12 @@ public partial class CompanyManagementWindow : Window
             {
                 _viewModel.SaveCommand.Execute(null);
             }
+
+            MessageBox.Show(this, Strings.MessageCompanySaved, Strings.Save, MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (InvalidOperationException ex)
         {
-            MessageBox.Show(this, ex.Message, "Записване на фирма", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, ex.Message, Strings.Save, MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -95,6 +98,10 @@ public partial class CompanyManagementWindow : Window
         if (result == true)
         {
             company.LogoPath = dialog.FileName;
+
+            // Force the grid to refresh so the new logo path shows immediately.
+            var view = CollectionViewSource.GetDefaultView(CompaniesGrid.ItemsSource);
+            view?.Refresh();
         }
     }
 
