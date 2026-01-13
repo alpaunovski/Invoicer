@@ -77,11 +77,17 @@ public partial class App : Application
 			var companyService = _host.Services.GetRequiredService<CompanyService>();
 			var companyContext = _host.Services.GetRequiredService<ICompanyContext>();
 			var companies = await companyService.GetCompaniesAsync();
-			var defaultCompanyId = settings.CompanyId ?? companies.FirstOrDefault()?.Id ?? 0;
-			if (defaultCompanyId != 0)
+			var defaultCompany = companies.FirstOrDefault(c => c.Id == settings.CompanyId) ?? companies.FirstOrDefault();
+			if (defaultCompany != null)
 			{
-				await companyContext.SetCompanyAsync(defaultCompanyId);
-				logger.LogInformation("Company context set to {CompanyId}", defaultCompanyId);
+				await companyContext.SetCompanyAsync(defaultCompany.Id);
+				settings.CompanyId = defaultCompany.Id;
+				await settingsService.SaveAsync(settings);
+				logger.LogInformation("Company context set to {CompanyId}", defaultCompany.Id);
+			}
+			else
+			{
+				logger.LogWarning("No companies available to set as context");
 			}
 
 			var mainWindow = _host.Services.GetRequiredService<MainWindow>();
