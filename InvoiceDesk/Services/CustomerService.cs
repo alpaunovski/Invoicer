@@ -1,5 +1,6 @@
 using InvoiceDesk.Data;
 using InvoiceDesk.Models;
+using InvoiceDesk.Resources;
 using Microsoft.EntityFrameworkCore;
 
 namespace InvoiceDesk.Services;
@@ -51,5 +52,32 @@ public class CustomerService
 
         await db.SaveChangesAsync(cancellationToken);
         return customer;
+    }
+
+    public async Task DeleteAsync(int customerId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var entity = await db.Customers.FirstOrDefaultAsync(c => c.Id == customerId && c.CompanyId == _companyContext.CurrentCompanyId, cancellationToken);
+        if (entity == null)
+        {
+            return;
+        }
+
+        var hasInvoices = await db.Invoices.AnyAsync(i => i.CustomerId == customerId && i.CompanyId == _companyContext.CurrentCompanyId, cancellationToken);
+        if (hasInvoices)
+        {
+            throw new InvalidOperationException(Strings.MessageCustomerDeleteHasInvoices);
+        }
+
+        db.Customers.Remove(entity);
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException(Strings.MessageCustomerDeleteFailed, ex);
+        }
     }
 }

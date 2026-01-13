@@ -8,10 +8,29 @@
         Title="{Binding Source={StaticResource Loc}, Path=[ManageCustomers]}" Height="450" Width="900">
     <DockPanel Margin="12">
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0 0 0 8">
-            <Button Content="{Binding Source={StaticResource Loc}, Path=[Save]}" Command="{Binding SaveCommand}" Width="100" Margin="0 0 8 0" />
+            <Button Content="{Binding Source={StaticResource Loc}, Path=[Save]}" Click="OnSaveClick" Width="100" Margin="0 0 8 0" />
+            <Button Content="{Binding Source={StaticResource Loc}, Path=[Delete]}" Command="{Binding DeleteCommand}" Width="100" Margin="0 0 8 0" />
             <Button Content="{Binding Source={StaticResource Loc}, Path=[Close]}" Width="100" Click="OnClose" />
         </StackPanel>
-        <DataGrid x:Name="CustomersGrid" ItemsSource="{Binding Customers}" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" IsReadOnly="False">
+        <DataGrid x:Name="CustomersGrid"
+                  ItemsSource="{Binding Customers}"
+                  SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="True"
+                  CanUserDeleteRows="True"
+                  IsReadOnly="False"
+                  RowValidationErrorTemplate="{x:Null}"
+                  Validation.ErrorTemplate="{x:Null}">
+            <DataGrid.Resources>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Validation.ErrorTemplate" Value="{x:Null}" />
+                    <Setter Property="Validation.ValidationAdornerSite" Value="{Binding RelativeSource={RelativeSource Self}}" />
+                </Style>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Validation.ErrorTemplate" Value="{x:Null}" />
+                    <Setter Property="Validation.ValidationAdornerSite" Value="{Binding RelativeSource={RelativeSource Self}}" />
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[NameLabel]}" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="*" />
                 <DataGridComboBoxColumn x:Name="CustomerCountryColumn"

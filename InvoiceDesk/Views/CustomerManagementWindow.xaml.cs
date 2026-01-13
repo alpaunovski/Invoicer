@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
+using CommunityToolkit.Mvvm.Input;
+using InvoiceDesk.Resources;
 using InvoiceDesk.Services;
 using InvoiceDesk.ViewModels;
 
@@ -41,6 +43,30 @@ public partial class CustomerManagementWindow : Window
     private void OnClose(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private async void OnSaveClick(object sender, RoutedEventArgs e)
+    {
+        CustomersGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Cell, true);
+        CustomersGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Row, true);
+
+        try
+        {
+            if (_viewModel.SaveCommand is IAsyncRelayCommand asyncCommand)
+            {
+                await asyncCommand.ExecuteAsync(null);
+            }
+            else if (_viewModel.SaveCommand.CanExecute(null))
+            {
+                _viewModel.SaveCommand.Execute(null);
+            }
+
+            MessageBox.Show(this, Strings.MessageCustomerSaved, Strings.Save, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (InvalidOperationException ex)
+        {
+            MessageBox.Show(this, ex.Message, Strings.Save, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void OnCultureChanged(object? sender, CultureInfo e)

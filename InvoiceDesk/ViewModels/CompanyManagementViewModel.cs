@@ -2,9 +2,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using InvoiceDesk.Models;
 using InvoiceDesk.Services;
+using InvoiceDesk.Resources;
 using System.Globalization;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 
 namespace InvoiceDesk.ViewModels;
 
@@ -73,7 +75,8 @@ public partial class CompanyManagementViewModel : ObservableObject
             CountryCode = "",
             Address = "",
             BankIban = "",
-            BankBic = ""
+            BankBic = "",
+            NextInvoiceNumber = 1
         });
     }
 
@@ -97,7 +100,16 @@ public partial class CompanyManagementViewModel : ObservableObject
         var target = SelectedCompany;
         if (target.Id != 0)
         {
-            await _companyService.DeleteAsync(target.Id);
+            try
+            {
+                await _companyService.DeleteAsync(target.Id);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Surface user-friendly errors (e.g., cannot delete with issued invoices).
+                MessageBox.Show(ex.Message, Strings.Delete, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
         }
 
         Companies.Remove(target);

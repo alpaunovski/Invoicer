@@ -91,6 +91,11 @@ public static class Strings
     public static string MessageInvoiceDeleted => Get();
     public static string MessageInvoiceDeleteFailed => Get();
     public static string MessageDeleteDraftOnly => Get();
+    public static string MessageCompanyDeleteIssued => Get();
+    public static string MessageCompanyDeleteFailed => Get();
+    public static string MessageCustomerDeleteHasInvoices => Get();
+    public static string MessageCustomerDeleteFailed => Get();
+    public static string MessageCustomerSaved => Get();
     public static string NameLabel => Get();
     public static string VatLabel => Get();
     public static string EikLabel => Get();

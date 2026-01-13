@@ -3,6 +3,7 @@ using InvoiceDesk.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using InvoiceDesk.Resources;
 
 namespace InvoiceDesk.Services;
 
@@ -55,8 +56,36 @@ public class CompanyService
             return;
         }
 
+        var hasIssuedInvoices = await db.Invoices
+            .AnyAsync(i => i.CompanyId == id && i.Status != InvoiceStatus.Draft, cancellationToken);
+        if (hasIssuedInvoices)
+        {
+            throw new InvalidOperationException(Strings.MessageCompanyDeleteIssued);
+        }
+
+        // Delete dependent entities explicitly to avoid FK restrictions on customers with invoices.
+        var invoices = await db.Invoices.Where(i => i.CompanyId == id).ToListAsync(cancellationToken);
+        if (invoices.Count > 0)
+        {
+            db.Invoices.RemoveRange(invoices);
+        }
+
+        var customers = await db.Customers.Where(c => c.CompanyId == id).ToListAsync(cancellationToken);
+        if (customers.Count > 0)
+        {
+            db.Customers.RemoveRange(customers);
+        }
+
         db.Companies.Remove(entity);
-        await db.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException(Strings.MessageCompanyDeleteFailed, ex);
+        }
     }
 
     private static void Normalize(Company company)

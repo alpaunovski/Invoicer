@@ -2,10 +2,12 @@ using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using InvoiceDesk.Models;
 using InvoiceDesk.Services;
+using InvoiceDesk.Resources;
 
 namespace InvoiceDesk.ViewModels;
 
@@ -17,6 +19,9 @@ public partial class CustomerManagementViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<Customer> customers = new();
+
+    [ObservableProperty]
+    private Customer? selectedCustomer;
 
     public ObservableCollection<CountryOption> Countries { get; } = new();
 
@@ -59,6 +64,31 @@ public partial class CustomerManagementViewModel : ObservableObject
         {
             await _customerService.SaveAsync(customer);
         }
+    }
+
+    [RelayCommand]
+    private async Task DeleteAsync()
+    {
+        if (SelectedCustomer == null)
+        {
+            return;
+        }
+
+        var target = SelectedCustomer;
+        if (target.Id != 0)
+        {
+            try
+            {
+                await _customerService.DeleteAsync(target.Id);
+            }
+            catch (InvalidOperationException ex)
+            {
+                MessageBox.Show(ex.Message, Strings.Delete, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+        }
+
+        Customers.Remove(target);
     }
 
     private void OnCultureChanged(object? sender, CultureInfo culture)

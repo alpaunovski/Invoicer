@@ -252,4 +252,19 @@
   <data name="MessageDeleteDraftOnly" xml:space="preserve">
     <value>Само чернови могат да се изтриват.</value>
   </data>
+  <data name="MessageCompanyDeleteIssued" xml:space="preserve">
+    <value>Не може да изтриете фирма с издадени фактури.</value>
+  </data>
+  <data name="MessageCompanyDeleteFailed" xml:space="preserve">
+    <value>Изтриването на фирмата се провали.</value>
+  </data>
+  <data name="MessageCustomerDeleteHasInvoices" xml:space="preserve">
+    <value>Не може да изтриете този клиент, защото има фактури към него.</value>
+  </data>
+  <data name="MessageCustomerDeleteFailed" xml:space="preserve">
+    <value>Изтриването на клиента се провали.</value>
+  </data>
+  <data name="MessageCustomerSaved" xml:space="preserve">
+    <value>Клиентът е записан.</value>
+  </data>
 </root>

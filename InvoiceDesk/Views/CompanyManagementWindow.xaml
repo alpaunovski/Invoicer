@@ -12,8 +12,24 @@
             <Button Content="{Binding Source={StaticResource Loc}, Path=[Delete]}" Command="{Binding DeleteCommand}" Width="100" Margin="0 0 8 0" />
             <Button Content="{Binding Source={StaticResource Loc}, Path=[Close]}" Width="100" Click="OnClose" />
         </StackPanel>
-        <DataGrid x:Name="CompaniesGrid" ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany, Mode=TwoWay}" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" IsReadOnly="False">
+        <DataGrid x:Name="CompaniesGrid"
+              ItemsSource="{Binding Companies}"
+              SelectedItem="{Binding SelectedCompany, Mode=TwoWay}"
+              AutoGenerateColumns="False"
+              CanUserAddRows="True"
+              CanUserDeleteRows="True"
+              IsReadOnly="False"
+              RowValidationErrorTemplate="{x:Null}"
+              Validation.ErrorTemplate="{x:Null}">
             <DataGrid.Resources>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Validation.ErrorTemplate" Value="{x:Null}" />
+                    <Setter Property="Validation.ValidationAdornerSite" Value="{Binding RelativeSource={RelativeSource Self}}" />
+                </Style>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Validation.ErrorTemplate" Value="{x:Null}" />
+                    <Setter Property="Validation.ValidationAdornerSite" Value="{Binding RelativeSource={RelativeSource Self}}" />
+                </Style>
                 <Style x:Key="DigitsOnlyBox" TargetType="TextBox">
                     <EventSetter Event="PreviewTextInput" Handler="OnEikPreviewTextInput" />
                     <EventSetter Event="DataObject.Pasting" Handler="OnEikPasting" />
@@ -51,7 +67,9 @@
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[IbanLabel]}" Binding="{Binding BankIban, UpdateSourceTrigger=PropertyChanged}" Width="150" />
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[BicLabel]}" Binding="{Binding BankBic, UpdateSourceTrigger=PropertyChanged}" Width="100" />
                 <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[PrefixLabel]}" Binding="{Binding InvoiceNumberPrefix, UpdateSourceTrigger=PropertyChanged}" Width="80" />
-                <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[NextNumberLabel]}" Binding="{Binding NextInvoiceNumber, UpdateSourceTrigger=PropertyChanged}" Width="60" />
+                <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[NextNumberLabel]}"
+                                      Binding="{Binding NextInvoiceNumber, UpdateSourceTrigger=PropertyChanged, TargetNullValue=1, FallbackValue=1, ValidatesOnExceptions=False}"
+                                      Width="60" />
                 <DataGridTemplateColumn Header="{Binding Source={StaticResource Loc}, Path=[LogoLabel]}" Width="220">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

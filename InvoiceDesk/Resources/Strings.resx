@@ -252,4 +252,19 @@
   <data name="MessageDeleteDraftOnly" xml:space="preserve">
     <value>Only draft invoices can be deleted.</value>
   </data>
+  <data name="MessageCompanyDeleteIssued" xml:space="preserve">
+    <value>Cannot delete a company with issued invoices.</value>
+  </data>
+  <data name="MessageCompanyDeleteFailed" xml:space="preserve">
+    <value>Company delete failed.</value>
+  </data>
+  <data name="MessageCustomerDeleteHasInvoices" xml:space="preserve">
+    <value>Cannot delete this customer because invoices exist for them.</value>
+  </data>
+  <data name="MessageCustomerDeleteFailed" xml:space="preserve">
+    <value>Customer delete failed.</value>
+  </data>
+  <data name="MessageCustomerSaved" xml:space="preserve">
+    <value>Customer saved.</value>
+  </data>
 </root>
