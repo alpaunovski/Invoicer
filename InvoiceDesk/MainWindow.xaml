@@ -144,19 +144,19 @@
                                     <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[UnitPriceLabel]}" Binding="{Binding UnitPrice, UpdateSourceTrigger=PropertyChanged, StringFormat=F2}" Width="100" />
                                     <DataGridTextColumn Header="{Binding Source={StaticResource Loc}, Path=[TaxRateLabel]}" Binding="{Binding TaxRate, UpdateSourceTrigger=PropertyChanged, StringFormat=F4}" Width="80" />
                                     <DataGridComboBoxColumn Header="{Binding Source={StaticResource Loc}, Path=[VatTypeLabel]}"
-                                                            SelectedValueBinding="{Binding VatType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static models:VatType.Domestic}, FallbackValue={x:Static models:VatType.Domestic}}"
+                                                            SelectedValueBinding="{Binding VatType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                             SelectedValuePath="Value"
                                                             DisplayMemberPath="Label"
                                                             Width="180">
                                         <DataGridComboBoxColumn.ElementStyle>
                                             <Style TargetType="ComboBox">
-                                                <Setter Property="ItemsSource" Value="{Binding DataContext.VatTypes, RelativeSource={RelativeSource AncestorType=Window}, PresentationTraceSources.TraceLevel=High}" />
+                                                <Setter Property="ItemsSource" Value="{Binding DataContext.VatTypes, RelativeSource={RelativeSource AncestorType=Window}}" />
                                                 <Setter Property="IsReadOnly" Value="True" />
                                             </Style>
                                         </DataGridComboBoxColumn.ElementStyle>
                                         <DataGridComboBoxColumn.EditingElementStyle>
                                             <Style TargetType="ComboBox">
-                                                <Setter Property="ItemsSource" Value="{Binding DataContext.VatTypes, RelativeSource={RelativeSource AncestorType=Window}, PresentationTraceSources.TraceLevel=High}" />
+                                                <Setter Property="ItemsSource" Value="{Binding DataContext.VatTypes, RelativeSource={RelativeSource AncestorType=Window}}" />
                                             </Style>
                                         </DataGridComboBoxColumn.EditingElementStyle>
                                     </DataGridComboBoxColumn>

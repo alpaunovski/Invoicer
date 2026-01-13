@@ -210,6 +210,15 @@ public class InvoiceService
 
         foreach (var incomingLine in incomingList)
         {
+            if (incomingLine.Id == 0)
+            {
+                // Unsaved lines have Id == 0; add each one so multiple new rows do not collapse into a single entry.
+                incomingLine.CompanyId = invoice.CompanyId;
+                incomingLine.InvoiceId = invoice.Id;
+                invoice.Lines.Add(incomingLine);
+                continue;
+            }
+
             var target = invoice.Lines.FirstOrDefault(l => l.Id == incomingLine.Id);
             if (target == null)
             {
