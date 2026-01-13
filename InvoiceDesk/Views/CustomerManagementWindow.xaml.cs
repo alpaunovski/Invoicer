@@ -58,6 +58,6 @@ public partial class CustomerManagementWindow : Window
 
     private void UpdateEikVisibility()
     {
-        CustomerEikColumn.Visibility = _viewModel.IsBulgarianUi ? Visibility.Visible : Visibility.Collapsed;
+        CustomerEikColumn.Visibility = Visibility.Visible;
     }
 }

@@ -165,7 +165,7 @@ public partial class CompanyManagementWindow : Window
 
     private void UpdateEikVisibility()
     {
-        EikColumn.Visibility = _viewModel.IsBulgarianUi ? Visibility.Visible : Visibility.Collapsed;
+        EikColumn.Visibility = Visibility.Visible;
     }
 
 }
